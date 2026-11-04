@@ -581,6 +581,7 @@ dev = [
     { name = "mypy" },
     { name = "pytest" },
     { name = "ruff" },
+    { name = "types-jsonschema" },
 ]
 
 [package.metadata]
@@ -598,6 +599,7 @@ dev = [
     { name = "mypy", specifier = ">=2.4.1" },
     { name = "pytest", specifier = ">=9.2.0" },
     { name = "ruff", specifier = ">=0.17.3" },
+    { name = "types-jsonschema", specifier = ">=4.26.0.20261006" },
 ]
 
 [[package]]
@@ -656,6 +658,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f5/5a/ece93af593564b593b406c587374f0698d7e6e5ef62cdc96597dfed58a65/typer_swissknife-0.1.1.tar.gz", hash = "sha256:963fe8cd33f96e198e0643c75812ad56288d8aaab39100e08bd12208ad2251d6", size = 6510, upload-time = "2026-10-16T13:58:40.096Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/23/67/a41a096a332b7d2f999363a509d46ec48b0978779ac3054cdd32522ac87d/typer_swissknife-0.1.1-py3-none-any.whl", hash = "sha256:244a3fa0931703e49025795315148e0abeb19cb4cea10f2633ba13e99672be6f", size = 8810, upload-time = "2026-10-16T13:58:38.756Z" },
+]
+
+[[package]]
+name = "types-jsonschema"
+version = "4.26.0.20261006"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "referencing" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/29/d2/1f742605f5a6d39f993134885b8de41c98af606871d3ebddaf3e776bd1eb/types_jsonschema-4.26.0.20261006.tar.gz", hash = "sha256:3eb7db61b6819d40addfdaac7173e749071a7d4a9a4394f0c844598ec84b2500", size = 16843, upload-time = "2026-10-06T08:16:07.318Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8b/a0/4f2e3c0dc3d5cad958006f2e0307065cc8fe4fbf0393ff0b69d55ee9bbe5/types_jsonschema-4.26.0.20261006-py3-none-any.whl", hash = "sha256:29301f4e65e3928540cdf5e23ad716e38bb0c0b416a48dada213edd3d70206ec", size = 16113, upload-time = "2026-10-06T08:16:06.355Z" },
 ]
 
 [[package]]

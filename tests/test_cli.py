@@ -2,6 +2,7 @@ import json
 import re
 from pathlib import Path
 
+import typer
 from schemify.cli.dependencies.schema import FilledDataArgumentDI, FilledDataOptionDI
 from schemify.cli.main import app
 from typer.testing import CliRunner
@@ -34,7 +35,7 @@ def write_json(path: Path, value: object) -> Path:
 
 class TestGenerate:
     def test_saves_schema(self, prompts: Prompts, tmp_path: Path) -> None:
-        prompts.feed("done", "boolean", "", "", True, "", False)
+        prompts.feed(["done", "boolean", "", "", True, "", False])
         output = tmp_path / "out" / "task.json"
         code, text = invoke("g", "-t", "Task", "-o", output)
 
@@ -42,7 +43,7 @@ class TestGenerate:
         assert json.loads(output.read_text(encoding="utf-8"))["title"] == "Task"
 
     def test_prints_schema(self, prompts: Prompts) -> None:
-        prompts.feed("done", "boolean", "", "", True, "", False)
+        prompts.feed(["done", "boolean", "", "", True, "", False])
         code, text = invoke("generate")
 
         assert code == 0, text
@@ -63,8 +64,8 @@ class TestFill:
     def test_saves_data(self, prompts: Prompts, tmp_path: Path) -> None:
         schema = write_json(tmp_path / "s.json", SCHEMA)
         output = tmp_path / "data.json"
-        prompts.feed("Rama", "-1", "25")
-        code, text = invoke("f", "-s", schema, "-o", output)
+        prompts.feed(["Rama", "-1", "25"])
+        code, text = invoke("f", schema, "-o", output)
 
         assert code == 0, text
         assert json.loads(output.read_text(encoding="utf-8")) == {"name": "Rama", "age": 25}
@@ -73,20 +74,20 @@ class TestFill:
     def test_invalid_json(self, tmp_path: Path) -> None:
         schema = tmp_path / "s.json"
         schema.write_text("{", encoding="utf-8")
-        code, text = invoke("fill", "-s", schema)
+        code, text = invoke("fill", schema)
 
         assert code == 2
         assert "Could not read schema file" in text
 
     def test_invalid_schema(self, tmp_path: Path) -> None:
-        code, text = invoke("fill", "-s", write_json(tmp_path / "s.json", {"type": "nope"}))
+        code, text = invoke("fill", write_json(tmp_path / "s.json", {"type": "nope"}))
 
         assert code == 2
         assert "Invalid schema file" in text
 
     def test_unsupported_schema(self, tmp_path: Path) -> None:
         schema = {"type": "object", "properties": {"x": {"$ref": "#/$defs/x"}}}
-        code, text = invoke("fill", "-s", write_json(tmp_path / "s.json", schema))
+        code, text = invoke("fill", write_json(tmp_path / "s.json", schema))
 
         assert code == 2
         assert "Can not fill 'x'" in text
@@ -100,16 +101,16 @@ class TestReusableDependencies:
 
         @other.command("by-argument")
         def by_argument(data: FilledDataArgumentDI) -> None:
-            print(data["name"])
+            typer.echo(data["name"])
 
         @other.command("by-option")
         def by_option(data: FilledDataOptionDI) -> None:
-            print(data["name"])
+            typer.echo(data["name"])
 
         return other
 
     def test_argument(self, prompts: Prompts, tmp_path: Path) -> None:
-        prompts.feed("Rama", "25")
+        prompts.feed(["Rama", "25"])
         schema = write_json(tmp_path / "s.json", SCHEMA)
         result = runner.invoke(self.make_app(), ["by-argument", str(schema)])
 
@@ -117,7 +118,7 @@ class TestReusableDependencies:
         assert result.output.strip() == "Rama"
 
     def test_option(self, prompts: Prompts, tmp_path: Path) -> None:
-        prompts.feed("Rama", "25")
+        prompts.feed(["Rama", "25"])
         schema = write_json(tmp_path / "s.json", SCHEMA)
         result = runner.invoke(self.make_app(), ["by-option", "--schema", str(schema)])
 

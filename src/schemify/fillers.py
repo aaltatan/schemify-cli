@@ -84,7 +84,7 @@ def fill(schema: Schema, label: str, *, required: bool = True) -> Any:
 
 
 def _name(schema: Schema, label: str) -> str:
-    """The schema `title` when it has one, else the property path."""
+    """Return the schema `title` when it has one, else the property path."""
     return schema.get("title") or label
 
 
@@ -185,9 +185,12 @@ def fill_array(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT0
     items: list[Any] = []
 
     while max_items is None or len(items) < max_items:
-        if len(items) >= min_items and not questionary.confirm(
-            f"Add an item to '{_name(schema, label)}'?", default=True
-        ).unsafe_ask():
+        if (
+            len(items) >= min_items
+            and not questionary.confirm(
+                f"Add an item to '{_name(schema, label)}'?", default=True
+            ).unsafe_ask()
+        ):
             break
 
         item = fill(items_schema, f"{label}[{len(items)}]")

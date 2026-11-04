@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 import pytest
 from schemify.generators import SCHEMA_DIALECT, ask_schema, generators
 from schemify.registry import NotSupportedError, Registry
@@ -24,7 +26,7 @@ class TestRegistry:
             generators["uuid"]
 
     def test_register_and_case_insensitive(self) -> None:
-        registry = Registry("Type")
+        registry = Registry[Callable[[], dict]]("Type")
 
         @registry.register("fake", "other")
         def generate_fake() -> dict:
@@ -37,7 +39,7 @@ class TestRegistry:
 
 class TestPrimitives:
     def test_without_validators(self, prompts: Prompts) -> None:
-        prompts.feed(False, False, False)
+        prompts.feed([False, False, False])
 
         assert generators["string"]() == {"type": "string"}
         assert generators["integer"]() == {"type": "integer"}
@@ -51,13 +53,13 @@ class TestPrimitives:
         assert not prompts.messages
 
     def test_string_format(self, prompts: Prompts) -> None:
-        prompts.feed(True, "email")
+        prompts.feed([True, "email"])
 
         assert generators["string"]() == {"type": "string", "format": "email"}
 
     def test_string_validators(self, prompts: Prompts) -> None:
         # validators, no format, not digits, min ("x" rejected), max, pattern, blocked
-        prompts.feed(True, "none", False, "x", "2", "10", "^[a-z]+$", "root, admin")
+        prompts.feed([True, "none", False, "x", "2", "10", "^[a-z]+$", "root, admin"])
 
         assert generators["string"]() == {
             "type": "string",
@@ -69,18 +71,18 @@ class TestPrimitives:
         assert prompts.rejected == [("x", "'x' is not an integer")]
 
     def test_string_digits_only_skips_pattern(self, prompts: Prompts) -> None:
-        prompts.feed(True, "none", True, "", "5", "")
+        prompts.feed([True, "none", True, "", "5", ""])
 
         assert generators["string"]() == {"type": "string", "pattern": r"^\d+$", "maxLength": 5}
 
     def test_number_bounds_asked_again_when_unsatisfiable(self, prompts: Prompts) -> None:
         # first round: minimum 10 > maximum 1, second round: minimum 1, multiple of 0.5
-        prompts.feed(True, "", "10", "", "1", "", "", "1", "", "", "0.5")
+        prompts.feed([True, "", "10", "", "1", "", "", "1", "", "", "0.5"])
 
         assert generators["number"]() == {"type": "number", "minimum": 1, "multipleOf": 0.5}
 
     def test_enum(self, prompts: Prompts) -> None:
-        prompts.feed("a, a", "red, green")
+        prompts.feed(["a, a", "red, green"])
 
         assert generators["enum"]() == {"type": "string", "enum": ["red", "green"]}
         assert prompts.rejected == [("a, a", "Choices must be unique")]
@@ -89,7 +91,7 @@ class TestPrimitives:
 class TestContainers:
     def test_array(self, prompts: Prompts) -> None:
         # items type, items validators, then array validators: min, max, unique
-        prompts.feed("string", False, True, "1", "", True)
+        prompts.feed(["string", False, True, "1", "", True])
 
         assert generators["array"]() == {
             "type": "array",
@@ -99,7 +101,7 @@ class TestContainers:
         }
 
     def test_object_with_nested_array_of_objects(self, prompts: Prompts) -> None:
-        prompts.feed(
+        prompts.feed([
             "",  # rejected, no property yet
             "name", "string", False, "", "Full name", True,
             "tags", "array", "object",
@@ -109,7 +111,7 @@ class TestContainers:
             "Tags", "", False,  # tags: label, no description, optional
             "",  # end of the root object
             False,
-        )  # fmt: skip
+        ])  # fmt: skip
 
         assert generators["object"]() == {
             "type": "object",
@@ -131,7 +133,7 @@ class TestContainers:
         assert prompts.rejected == [("", "Add at least one property")]
 
     def test_ask_schema(self, prompts: Prompts) -> None:
-        prompts.feed("done", "boolean", "", "", True, "", False)
+        prompts.feed(["done", "boolean", "", "", True, "", False])
 
         assert ask_schema("Task") == {
             "$schema": SCHEMA_DIALECT,

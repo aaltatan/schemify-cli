@@ -74,7 +74,7 @@ def _ask_constraints(constraints: list[Constraint]) -> Schema:
 
 @generators.register("string")
 def generate_string() -> Schema:
-    """A string, optionally with a format (email, uuid), digits only, length, pattern, blocked."""
+    """Ask for a string: format (email, uuid), digits only, length, pattern, blocked values."""
     schema: Schema = {"type": "string"}
 
     if not _wants_validators():
@@ -96,7 +96,7 @@ def generate_string() -> Schema:
 
 def _number_generator(number_type: str) -> GenerateFn:
     def generate() -> Schema:
-        """An integer or a number, optionally with bounds and a multiple."""
+        """Ask for an integer or a number: bounds and a multiple."""
         schema: Schema = {"type": number_type}
 
         if not _wants_validators():
@@ -113,25 +113,25 @@ generators.add(_number_generator("number"), "number")
 
 @generators.register("boolean")
 def generate_boolean() -> Schema:
-    """A boolean."""
+    """Return a boolean."""
     return {"type": "boolean"}
 
 
 @generators.register("date")
 def generate_date() -> Schema:
-    """An ISO date string: `2026-11-04`."""
+    """Return an ISO date string: `2026-11-04`."""
     return {"type": "string", "format": "date"}
 
 
 @generators.register("datetime")
 def generate_datetime() -> Schema:
-    """An RFC 3339 datetime string: `2026-11-04T10:30:00+03:00`."""
+    """Return an RFC 3339 datetime string: `2026-11-04T10:30:00+03:00`."""
     return {"type": "string", "format": "date-time"}
 
 
 @generators.register("enum")
 def generate_enum() -> Schema:
-    """A string limited to choices."""
+    """Ask for a string limited to choices."""
     answer = questionary.text(
         "Choices, comma separated:", validate=validator(to_choices)
     ).unsafe_ask()
@@ -146,7 +146,7 @@ def generate_enum() -> Schema:
 
 @generators.register("array")
 def generate_array() -> Schema:
-    """A list of items of one type, optionally with a size and unique items."""
+    """Ask for a list of items of one type: size and unique items."""
     items = generators[_ask_type("Items type:")]()
     schema: Schema = {"type": "array", "items": items}
 
@@ -163,24 +163,28 @@ def generate_array() -> Schema:
 
 @generators.register("object")
 def generate_object() -> Schema:
-    """An object, asking each property name, type, label, description and whether it is required.
+    """Ask for an object: each property name, type, label, description and if it is required.
 
     The label is saved as the JSON Schema `title`, fillers show it instead of the property name.
     """
     properties: Schema = {}
     required: list[str] = []
 
-    while name := questionary.text(
-        "Property name (empty to finish):", validate=is_property_name(properties)
-    ).unsafe_ask().strip():
+    while (
+        name := questionary.text(
+            "Property name (empty to finish):", validate=is_property_name(properties)
+        )
+        .unsafe_ask()
+        .strip()
+    ):
         property_schema = generators[_ask_type(f"Type of '{name}':")]()
         annotations = {
-            "title": questionary.text(
-                f"Label shown instead of '{name}' when filling (optional):"
-            ).unsafe_ask().strip(),
-            "description": questionary.text(
-                f"Description of '{name}' (optional):"
-            ).unsafe_ask().strip(),
+            "title": questionary.text(f"Label shown instead of '{name}' when filling (optional):")
+            .unsafe_ask()
+            .strip(),
+            "description": questionary.text(f"Description of '{name}' (optional):")
+            .unsafe_ask()
+            .strip(),
         }
 
         properties[name] = {

@@ -49,29 +49,29 @@ class TestLeaves:
     def test_rejects_until_valid(
         self, prompts: Prompts, schema: dict[str, Any], answers: list[str], expected: Any
     ) -> None:
-        prompts.feed(*answers)
+        prompts.feed(answers)
 
         assert fill(schema, "field") == expected
         assert len(prompts.rejected) == len(answers) - 1
 
     def test_optional_text_can_be_skipped(self, prompts: Prompts) -> None:
-        prompts.feed("")
+        prompts.feed([""])
 
         assert fill({"type": "integer"}, "age", required=False) is MISSING
 
     def test_required_string_can_be_empty_when_schema_allows(self, prompts: Prompts) -> None:
-        prompts.feed("")
+        prompts.feed([""])
 
         assert fill({"type": "string"}, "note") == ""
 
     def test_boolean_and_enum(self, prompts: Prompts) -> None:
-        prompts.feed(True, "2")
+        prompts.feed([True, "2"])
 
         assert fill({"type": "boolean"}, "ok") is True
         assert fill({"enum": [1, 2]}, "level") == 2
 
     def test_optional_choice_asks_first(self, prompts: Prompts) -> None:
-        prompts.feed(False)
+        prompts.feed([False])
 
         assert fill({"type": "boolean"}, "ok", required=False) is MISSING
 
@@ -86,7 +86,7 @@ class TestContainers:
             "uniqueItems": True,
         }
         # first item asked without confirm (minItems), duplicate dropped, stops at maxItems
-        prompts.feed("a", True, "a", True, "b")
+        prompts.feed(["a", True, "a", True, "b"])
 
         assert fill(schema, "tags") == ["a", "b"]
         assert not prompts.answers
@@ -101,7 +101,7 @@ class TestContainers:
             },
             "required": ["name"],
         }
-        prompts.feed("Rama", "", True, "Homs")
+        prompts.feed(["Rama", "", True, "Homs"])
 
         assert fill(schema, "") == {"name": "Rama", "address": {"city": "Homs"}}
         assert prompts.messages[-1] == "address.city:"
@@ -117,13 +117,13 @@ class TestContainers:
                 },
             },
         }
-        prompts.feed(True, "Homs")
+        prompts.feed([True, "Homs"])
 
         assert fill(schema, "") == {"address": {"city": "Homs"}}
         assert prompts.messages == ["Add 'Address'?", "City:"]
 
     def test_description_in_message(self, prompts: Prompts) -> None:
-        prompts.feed("x")
+        prompts.feed(["x"])
         fill({"type": "string", "description": "Full name"}, "name")
 
         assert prompts.messages == ["name (Full name):"]
@@ -137,22 +137,22 @@ class TestAskData:
             "required": ["a"],
             "minProperties": 2,
         }
-        prompts.feed("x")
+        prompts.feed(["x"])
 
         with pytest.raises(InvalidDataError):
             ask_data(schema)
 
     def test_round_trip(self, prompts: Prompts) -> None:
-        prompts.feed(
+        prompts.feed([
             "name", "string", True, "none", False, "2", "", "", "", "Full name", "", True,
             "born", "date", "", "", True,
             "role", "enum", "admin, user", "", "", False,
             "", False,
-        )  # fmt: skip
+        ])  # fmt: skip
         schema = ask_schema("Person")
 
         # "R" is too short, role is optional so it is confirmed first
-        prompts.feed("R", "Rawaa", "1993-01-01", True, "user")
+        prompts.feed(["R", "Rawaa", "1993-01-01", True, "user"])
         data = ask_data(schema)
 
         assert data == {"name": "Rawaa", "born": "1993-01-01", "role": "user"}
@@ -160,7 +160,8 @@ class TestAskData:
         validate(data, schema)
 
 
-def test_custom_filler(prompts: Prompts) -> None:
+@pytest.mark.usefixtures("prompts")
+def test_custom_filler() -> None:
     fillers.add(lambda _schema, _label, _required: "custom", "fake-format")
 
     assert fill({"type": "string", "format": "fake-format"}, "x") == "custom"

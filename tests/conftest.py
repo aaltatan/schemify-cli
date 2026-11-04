@@ -16,9 +16,9 @@ class Prompts:
 
     answers: deque[Any] = field(default_factory=deque)
     messages: list[str] = field(default_factory=list)
-    rejected: list[tuple[Any, str]] = field(default_factory=list)
+    rejected: list[tuple[Any, bool | str]] = field(default_factory=list)
 
-    def feed(self, *answers: Any) -> None:
+    def feed(self, answers: list[Any]) -> None:
         self.answers.extend(answers)
 
 

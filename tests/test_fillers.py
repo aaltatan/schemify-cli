@@ -106,6 +106,22 @@ class TestContainers:
         assert fill(schema, "") == {"name": "Rama", "address": {"city": "Homs"}}
         assert prompts.messages[-1] == "address.city:"
 
+    def test_title_replaces_the_path(self, prompts: Prompts) -> None:
+        schema = {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "object",
+                    "title": "Address",
+                    "properties": {"city": {"type": "string", "title": "City"}},
+                },
+            },
+        }
+        prompts.feed(True, "Homs")
+
+        assert fill(schema, "") == {"address": {"city": "Homs"}}
+        assert prompts.messages == ["Add 'Address'?", "City:"]
+
     def test_description_in_message(self, prompts: Prompts) -> None:
         prompts.feed("x")
         fill({"type": "string", "description": "Full name"}, "name")
@@ -128,9 +144,9 @@ class TestAskData:
 
     def test_round_trip(self, prompts: Prompts) -> None:
         prompts.feed(
-            "name", "string", True, "none", False, "2", "", "", "", "", True,
-            "born", "date", "", True,
-            "role", "enum", "admin, user", "", False,
+            "name", "string", True, "none", False, "2", "", "", "", "Full name", "", True,
+            "born", "date", "", "", True,
+            "role", "enum", "admin, user", "", "", False,
             "", False,
         )  # fmt: skip
         schema = ask_schema("Person")
@@ -140,6 +156,7 @@ class TestAskData:
         data = ask_data(schema)
 
         assert data == {"name": "Rawaa", "born": "1993-01-01", "role": "user"}
+        assert prompts.messages[-4:] == ["Full name:", "born:", "Add 'role'?", "role:"]
         validate(data, schema)
 
 

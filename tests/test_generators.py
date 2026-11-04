@@ -101,12 +101,12 @@ class TestContainers:
     def test_object_with_nested_array_of_objects(self, prompts: Prompts) -> None:
         prompts.feed(
             "",  # rejected, no property yet
-            "name", "string", False, "Full name", True,
+            "name", "string", False, "", "Full name", True,
             "tags", "array", "object",
-            "label", "enum", "a, b", "", True,
+            "label", "enum", "a, b", "", "", True,
             "", True,  # end of the tag object, allow extra properties
             False,  # no array validators
-            "", False,  # tags: no description, optional
+            "Tags", "", False,  # tags: label, no description, optional
             "",  # end of the root object
             False,
         )  # fmt: skip
@@ -116,6 +116,7 @@ class TestContainers:
             "properties": {
                 "name": {"description": "Full name", "type": "string"},
                 "tags": {
+                    "title": "Tags",
                     "type": "array",
                     "items": {
                         "type": "object",
@@ -130,7 +131,7 @@ class TestContainers:
         assert prompts.rejected == [("", "Add at least one property")]
 
     def test_ask_schema(self, prompts: Prompts) -> None:
-        prompts.feed("done", "boolean", "", True, "", False)
+        prompts.feed("done", "boolean", "", "", True, "", False)
 
         assert ask_schema("Task") == {
             "$schema": SCHEMA_DIALECT,

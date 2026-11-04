@@ -9,7 +9,7 @@ from typer_di import TyperDI
 from typer_swissknife import command
 
 from schemify.cli.dependencies.console import ConsoleDI
-from schemify.cli.dependencies.schema import FilledDataDI
+from schemify.cli.dependencies.schema import FilledDataOptionDI
 from schemify.generators import ask_schema
 
 app = TyperDI(
@@ -83,7 +83,7 @@ def generate_schema(
     no_args_is_help=True,
     help="Ask for data matching a JSON Schema",
 )
-def fill_data(console: ConsoleDI, data: FilledDataDI, output: OutputOption = None) -> None:
+def fill_data(console: ConsoleDI, data: FilledDataOptionDI, output: OutputOption = None) -> None:
     """Ask for data matching a JSON Schema."""
     _output(console, data, output)
 

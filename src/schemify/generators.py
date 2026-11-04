@@ -163,7 +163,10 @@ def generate_array() -> Schema:
 
 @generators.register("object")
 def generate_object() -> Schema:
-    """An object, asking each property name, type, description and whether it is required."""
+    """An object, asking each property name, type, label, description and whether it is required.
+
+    The label is saved as the JSON Schema `title`, fillers show it instead of the property name.
+    """
     properties: Schema = {}
     required: list[str] = []
 
@@ -171,12 +174,19 @@ def generate_object() -> Schema:
         "Property name (empty to finish):", validate=is_property_name(properties)
     ).unsafe_ask().strip():
         property_schema = generators[_ask_type(f"Type of '{name}':")]()
-        description = questionary.text(f"Description of '{name}' (optional):").unsafe_ask()
+        annotations = {
+            "title": questionary.text(
+                f"Label shown instead of '{name}' when filling (optional):"
+            ).unsafe_ask().strip(),
+            "description": questionary.text(
+                f"Description of '{name}' (optional):"
+            ).unsafe_ask().strip(),
+        }
 
-        if description.strip():
-            property_schema = {"description": description.strip(), **property_schema}
-
-        properties[name] = property_schema
+        properties[name] = {
+            **{keyword: value for keyword, value in annotations.items() if value},
+            **property_schema,
+        }
 
         if questionary.confirm(f"Is '{name}' required?", default=True).unsafe_ask():
             required.append(name)

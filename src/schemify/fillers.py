@@ -83,15 +83,24 @@ def fill(schema: Schema, label: str, *, required: bool = True) -> Any:
 # -----------------------
 
 
+def _name(schema: Schema, label: str) -> str:
+    """The schema `title` when it has one, else the property path."""
+    return schema.get("title") or label
+
+
 def _message(schema: Schema, label: str) -> str:
+    name = _name(schema, label)
     description = schema.get("description")
 
-    return f"{label} ({description}):" if description else f"{label}:"
+    return f"{name} ({description}):" if description else f"{name}:"
 
 
-def _skipped(label: str, *, required: bool) -> bool:
+def _skipped(schema: Schema, label: str, *, required: bool) -> bool:
     """Ask whether to add an optional value, `False` for required values."""
-    return not required and not questionary.confirm(f"Add '{label}'?", default=True).unsafe_ask()
+    if required:
+        return False
+
+    return not questionary.confirm(f"Add '{_name(schema, label)}'?", default=True).unsafe_ask()
 
 
 # -----------------------
@@ -141,7 +150,7 @@ fillers.add(_text_filler(to_datetime), "date-time")
 @fillers.register("boolean")
 def fill_boolean(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT001
     """Ask yes / no."""
-    if _skipped(label, required=required):
+    if _skipped(schema, label, required=required):
         return MISSING
 
     return questionary.confirm(_message(schema, label), default=False).unsafe_ask()
@@ -150,7 +159,7 @@ def fill_boolean(schema: Schema, label: str, required: bool) -> Any:  # noqa: FB
 @fillers.register("enum")
 def fill_enum(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT001
     """Ask to pick one of the `enum` choices, they can be any JSON value."""
-    if _skipped(label, required=required):
+    if _skipped(schema, label, required=required):
         return MISSING
 
     choices = {str(choice): choice for choice in schema["enum"]}
@@ -167,7 +176,7 @@ def fill_enum(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT00
 @fillers.register("array")
 def fill_array(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT001
     """Ask items until the user stops, respecting `minItems`, `maxItems` and `uniqueItems`."""
-    if _skipped(label, required=required):
+    if _skipped(schema, label, required=required):
         return MISSING
 
     items_schema = schema.get("items", {})
@@ -177,14 +186,14 @@ def fill_array(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT0
 
     while max_items is None or len(items) < max_items:
         if len(items) >= min_items and not questionary.confirm(
-            f"Add an item to '{label}'?", default=True
+            f"Add an item to '{_name(schema, label)}'?", default=True
         ).unsafe_ask():
             break
 
         item = fill(items_schema, f"{label}[{len(items)}]")
 
         if schema.get("uniqueItems") and item in items:
-            questionary.print(f"{item!r} is already in '{label}'", style="fg:red")
+            questionary.print(f"{item!r} is already in '{_name(schema, label)}'", style="fg:red")
             continue
 
         items.append(item)
@@ -195,7 +204,7 @@ def fill_array(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT0
 @fillers.register("object")
 def fill_object(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT001
     """Ask each property in order, optional ones can be skipped."""
-    if _skipped(label, required=required):
+    if _skipped(schema, label, required=required):
         return MISSING
 
     required_names = set(schema.get("required", []))

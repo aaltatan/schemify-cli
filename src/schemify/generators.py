@@ -1,8 +1,9 @@
 """Schema generators: ask the user about a type and return its JSON Schema, picked by type name."""
 
+import inspect
 import json
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import Any, get_origin
 
 import questionary
 
@@ -242,22 +243,65 @@ def _computer_choices() -> list[str | questionary.Separator]:
     return choices
 
 
+_PLACEHOLDERS: dict[Any, Any] = {str: "text", int: 1, float: 1.5, bool: True, dict: {}, list: []}
+_JSON_TYPES = (str, int, float, bool, dict, list, type(None))
+
+
+def _options_example(fn: Callable[..., Any], sources: int) -> dict[str, Any] | None:
+    """Return example options of `fn` once `sources` values fill its first parameters.
+
+    An option with a default shows it, a required one a placeholder of its type.
+    `None` when `fn` takes no options.
+    """
+    example: dict[str, Any] = {}
+    takes_any = False
+
+    for param in inspect.signature(fn).parameters.values():
+        if param.kind is param.VAR_POSITIONAL:
+            sources = 0  # it takes the remaining sources
+        elif param.kind is param.VAR_KEYWORD:
+            takes_any = True
+        elif sources and param.kind is not param.KEYWORD_ONLY:
+            sources -= 1
+        elif param.default is not param.empty and isinstance(param.default, _JSON_TYPES):
+            example[param.name] = param.default
+        else:
+            kind = get_origin(param.annotation) or param.annotation  # `dict[str, Any]` -> `dict`
+            example[param.name] = _PLACEHOLDERS.get(kind, "value")
+
+    return example if example or takes_any else None
+
+
+def _describe(name: str, fn: Callable[..., Any]) -> None:
+    """Print the computer signature and summary, so the user knows its sources and options."""
+    summary = (inspect.getdoc(fn) or "").split("\n\n")[0]
+    questionary.print(f"{name}{inspect.signature(fn)}", style="bold")
+
+    if summary:
+        questionary.print(f"  {summary}", style="italic")
+
+
 def _generate_computed(names: list[str]) -> Schema:
     """Ask how a property is computed from the earlier `names`, and the type of its result.
 
     Keyword sources (`{"alias": "path"}`), `$.` / `[*]` paths and `default` are written by hand.
     """
     fn = questionary.select("Compute with:", choices=_computer_choices()).unsafe_ask()
+    _describe(fn, computers[fn])
     sources = questionary.checkbox("Computed from (in order):", choices=names).unsafe_ask()
-    options = questionary.text(
-        'Options as JSON, like {"sep": ", "} (optional):', validate=optional(validator(_to_options))
-    ).unsafe_ask()
+    example = _options_example(computers[fn], len(sources))
     spec: Schema = {"fn": fn}
 
     if sources:
         spec["from"] = sources
 
-    if options.strip():
-        spec["options"] = _to_options(options)
+    if example is not None:
+        hint = json.dumps(example, ensure_ascii=False)
+        options = questionary.text(
+            f"Options as JSON (optional), like {hint}:", validate=optional(validator(_to_options))
+        ).unsafe_ask()
+
+        if options.strip():
+            spec["options"] = _to_options(options)
 
     return {**generators[_ask_type("Result type:")](), KEYWORD: spec}

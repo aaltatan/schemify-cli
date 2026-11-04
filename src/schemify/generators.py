@@ -11,11 +11,11 @@ from .validators import (
     NUMBER_CONSTRAINTS,
     STRING_CONSTRAINTS,
     Constraint,
-    check_bounds,
     is_property_name,
     optional,
     to_choices,
     validator,
+    within_bounds,
 )
 
 type GenerateFn = Callable[[], Schema]
@@ -47,24 +47,19 @@ def _wants_validators() -> bool:
 
 
 def _ask_constraints(constraints: list[Constraint]) -> Schema:
-    """Ask each constraint (empty answer skips it), again until the bounds are satisfiable."""
-    while True:
-        schema: Schema = {}
+    """Ask each constraint, an empty answer skips it, a conflicting bound is asked again."""
+    schema: Schema = {}
 
-        for keyword, question, parse, validate in constraints:
-            answer = questionary.text(
-                f"{question} (optional):", validate=optional(validate)
-            ).unsafe_ask()
+    for constraint in constraints:
+        keyword, question, parse, _ = constraint
+        answer = questionary.text(
+            f"{question} (optional):", validate=optional(within_bounds(schema, constraint))
+        ).unsafe_ask()
 
-            if answer.strip():
-                schema[keyword] = parse(answer)
+        if answer.strip():
+            schema[keyword] = parse(answer)
 
-        error = check_bounds(schema)
-
-        if error is None:
-            return schema
-
-        questionary.print(f"{error}, try again", style="fg:red")
+    return schema
 
 
 # -----------------------

@@ -75,11 +75,17 @@ class TestPrimitives:
 
         assert generators["string"]() == {"type": "string", "pattern": r"^\d+$", "maxLength": 5}
 
-    def test_number_bounds_asked_again_when_unsatisfiable(self, prompts: Prompts) -> None:
-        # first round: minimum 10 > maximum 1, second round: minimum 1, multiple of 0.5
-        prompts.feed([True, "", "10", "", "1", "", "", "1", "", "", "0.5"])
+    def test_conflicting_bound_is_asked_again(self, prompts: Prompts) -> None:
+        # gt skipped, ge 10, lt "1" rejected then "20", le skipped, multiple of 0.5
+        prompts.feed([True, "", "10", "1", "20", "", "0.5"])
 
-        assert generators["number"]() == {"type": "number", "minimum": 1, "multipleOf": 0.5}
+        assert generators["number"]() == {
+            "type": "number",
+            "minimum": 10,
+            "exclusiveMaximum": 20,
+            "multipleOf": 0.5,
+        }
+        assert prompts.rejected == [("1", "minimum (10) must be less than exclusiveMaximum (1)")]
 
     def test_enum(self, prompts: Prompts) -> None:
         prompts.feed(["a, a", "red, green"])

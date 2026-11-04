@@ -1,15 +1,16 @@
 """The schemify command line application."""
 
-import json
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated
 
 import typer
+from rich.syntax import Syntax
 from typer_di import TyperDI
 from typer_swissknife import command
 
 from schemify.cli.dependencies.console import ConsoleDI
 from schemify.cli.dependencies.schema import FilledDataArgumentDI
+from schemify.formatters import formatters, to_json
 from schemify.generators import ask_schema
 
 app = TyperDI(
@@ -32,7 +33,7 @@ OutputOption = Annotated[  # not a `type` alias, typer can not read through thos
     typer.Option(
         "-o",
         "--output",
-        help="Path to save the JSON to, printed when missing",
+        help="Path to save the output to, printed when missing",
         file_okay=True,
         dir_okay=False,
         resolve_path=True,
@@ -41,11 +42,18 @@ OutputOption = Annotated[  # not a `type` alias, typer can not read through thos
 ]
 
 
-def _output(console: ConsoleDI, value: Any, output: Path | None) -> None:
-    text = json.dumps(value, indent=2, ensure_ascii=False)
+def _check_if_format_is_supported(name: str) -> str:
+    if name not in formatters:
+        supported = ", ".join(formatters.names)
+        message = f"Format '{name}' is not supported, supported: {supported}"
+        raise typer.BadParameter(message)
 
+    return name.lower()
+
+
+def _output(console: ConsoleDI, text: str, lexer: str, output: Path | None) -> None:
     if output is None:
-        console.print_json(text)
+        console.print(Syntax(text, lexer, background_color="default"))
         return
 
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -73,7 +81,7 @@ def generate_schema(
     except KeyboardInterrupt:
         raise typer.Abort from None
 
-    _output(console, schema, output)
+    _output(console, to_json(schema), "json", output)
 
 
 @command(
@@ -83,9 +91,22 @@ def generate_schema(
     no_args_is_help=True,
     help="Ask for data matching a JSON Schema",
 )
-def fill_data(console: ConsoleDI, data: FilledDataArgumentDI, output: OutputOption = None) -> None:
+def fill_data(
+    console: ConsoleDI,
+    data: FilledDataArgumentDI,
+    output: OutputOption = None,
+    output_format: Annotated[
+        str,
+        typer.Option(
+            "-f",
+            "--format",
+            help=f"Output format ({', '.join(formatters.names)})",
+            callback=_check_if_format_is_supported,
+        ),
+    ] = "json",
+) -> None:
     """Ask for data matching a JSON Schema."""
-    _output(console, data, output)
+    _output(console, formatters[output_format](data), output_format, output)
 
 
 def main() -> None:

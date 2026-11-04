@@ -1,5 +1,6 @@
 import pytest
 from schemify.validators import (
+    NUMBER_CONSTRAINTS,
     check_bounds,
     check_schema,
     check_value,
@@ -14,6 +15,7 @@ from schemify.validators import (
     to_positive_number,
     to_regex,
     validator,
+    within_bounds,
 )
 
 
@@ -105,6 +107,14 @@ class TestChecks:
     )
     def test_check_bounds(self, schema: dict, ok: bool) -> None:  # noqa: FBT001
         assert (check_bounds(schema) is None) is ok
+
+    def test_within_bounds(self) -> None:
+        constraint = NUMBER_CONSTRAINTS[3]  # maximum
+        validate = within_bounds({"minimum": 10}, constraint)
+
+        assert validate("x") == "'x' is not a number"
+        assert validate("5") == "minimum (10) must be less than maximum (5)"
+        assert validate("10") is True
 
     def test_check_schema(self) -> None:
         assert check_schema({"type": "string"}) is None

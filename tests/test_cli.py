@@ -71,6 +71,22 @@ class TestFill:
         assert json.loads(output.read_text(encoding="utf-8")) == {"name": "Rama", "age": 25}
         assert prompts.rejected == [("-1", "-1 is less than the minimum of 0")]
 
+    def test_formats(self, prompts: Prompts, tmp_path: Path) -> None:
+        schema = write_json(tmp_path / "s.json", SCHEMA)
+        output = tmp_path / "data.js"
+        prompts.feed(["Rama", "25"])
+        code, text = invoke("f", schema, "-f", "javascript", "-o", output)
+
+        assert code == 0, text
+        assert output.read_text(encoding="utf-8") == '{\n  name: "Rama",\n  age: 25\n}\n'
+
+    def test_unsupported_format_fails_before_asking(self, prompts: Prompts, tmp_path: Path) -> None:
+        code, text = invoke("f", write_json(tmp_path / "s.json", SCHEMA), "-f", "yaml")
+
+        assert code == 2
+        assert "Format 'yaml' is not supported" in text
+        assert not prompts.messages
+
     def test_invalid_json(self, tmp_path: Path) -> None:
         schema = tmp_path / "s.json"
         schema.write_text("{", encoding="utf-8")

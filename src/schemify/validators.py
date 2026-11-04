@@ -213,6 +213,24 @@ def check_bounds(schema: Schema) -> str | None:
     return None
 
 
+def within_bounds(schema: Schema, constraint: Constraint) -> PromptValidator:
+    """Run the `constraint` validator, then reject an answer conflicting with `schema` bounds.
+
+    So the user stays on the conflicting answer instead of starting the constraints over.
+    """
+    keyword, _, parse, validate = constraint
+
+    def validate_bounds(text: str) -> bool | str:
+        result = validate(text)
+
+        if result is not True:
+            return result
+
+        return check_bounds({**schema, keyword: parse(text)}) or True
+
+    return validate_bounds
+
+
 # -----------------------
 # json schema
 # -----------------------

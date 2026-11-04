@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 from jsonschema import validate
-from schemify.fillers import MISSING, InvalidDataError, ask_data, fill, fillers, kind
+from schemify.fillers import MISSING, InvalidDataError, ask_data, ask_list, fill, fillers, kind
 from schemify.generators import ask_schema
 from schemify.registry import NotSupportedError
 
@@ -158,6 +158,62 @@ class TestAskData:
         assert data == {"name": "Rawaa", "born": "1993-01-01", "role": "user"}
         assert prompts.messages[-4:] == ["Full name:", "born:", "Add 'role'?", "role:"]
         validate(data, schema)
+
+    def test_computed_properties_are_not_asked(self, prompts: Prompts) -> None:
+        schema = {
+            "type": "object",
+            "properties": {
+                "first": {"type": "string"},
+                "last": {"type": "string"},
+                "full": {
+                    "type": "string",
+                    "minLength": 5,
+                    "x-compute": {"fn": "join", "from": ["first", "last"]},
+                },
+            },
+        }
+        prompts.feed(["Rama", "Ali"])
+
+        assert ask_data(schema) == {"first": "Rama", "last": "Ali", "full": "Rama Ali"}
+        assert prompts.messages == ["first:", "last:"]
+
+        # the computed value is checked against its schema too
+        prompts.feed(["A", "B"])
+
+        with pytest.raises(InvalidDataError, match="too short"):
+            ask_data(schema)
+
+    def test_compute_error(self, prompts: Prompts) -> None:
+        schema = {
+            "type": "object",
+            "properties": {
+                "born": {"type": "string"},
+                "age": {"type": "integer", "x-compute": {"fn": "age", "from": ["born"]}},
+            },
+        }
+        prompts.feed(["not a date"])
+
+        with pytest.raises(InvalidDataError, match="Can not compute 'age'"):
+            ask_data(schema)
+
+
+class TestAskList:
+    def test_items_are_computed_and_checked_on_their_own(self, prompts: Prompts) -> None:
+        schema = {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "minLength": 2},
+                "upper": {"type": "string", "x-compute": {"fn": "upper", "from": ["$.name"]}},
+            },
+        }
+        # "R" is rejected while asking, the second item stops the list
+        prompts.feed(["Rama", True, "R", "Ali", False])
+
+        assert ask_list(schema) == [
+            {"name": "Rama", "upper": "RAMA"},
+            {"name": "Ali", "upper": "ALI"},
+        ]
+        assert prompts.rejected == [("R", "'R' is too short")]
 
 
 @pytest.mark.usefixtures("prompts")

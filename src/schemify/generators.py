@@ -1,9 +1,12 @@
 """Schema generators: ask the user about a type and return its JSON Schema, picked by type name."""
 
-from collections.abc import Callable
+import json
+from collections.abc import Callable, Sequence
+from typing import Any
 
 import questionary
 
+from .computers import KEYWORD, computers, groups
 from .models import Schema
 from .registry import Registry
 from .validators import (
@@ -38,8 +41,10 @@ def ask_schema(title: str | None = None) -> Schema:
 # -----------------------
 
 
-def _ask_type(message: str) -> str:
-    return questionary.select(message, choices=generators.names, default="string").unsafe_ask()
+def _ask_type(message: str, extra: Sequence[str] = ()) -> str:
+    choices = [*generators.names, *extra]
+
+    return questionary.select(message, choices=choices, default="string").unsafe_ask()
 
 
 def _wants_validators() -> bool:
@@ -172,7 +177,13 @@ def generate_object() -> Schema:
         .unsafe_ask()
         .strip()
     ):
-        property_schema = generators[_ask_type(f"Type of '{name}':")]()
+        # a computed property needs earlier properties to compute from
+        type_name = _ask_type(f"Type of '{name}':", ["computed"] if properties else [])
+        property_schema = (
+            _generate_computed(list(properties))
+            if type_name == "computed"
+            else generators[type_name]()
+        )
         annotations = {
             "title": questionary.text(f"Label shown instead of '{name}' when filling (optional):")
             .unsafe_ask()
@@ -190,6 +201,8 @@ def generate_object() -> Schema:
         if questionary.confirm(f"Is '{name}' required?", default=True).unsafe_ask():
             required.append(name)
 
+        questionary.print("")  # separate each property's questions from the next
+
     schema: Schema = {"type": "object", "properties": properties}
 
     if required:
@@ -199,3 +212,52 @@ def generate_object() -> Schema:
         schema["additionalProperties"] = False
 
     return schema
+
+
+def _to_options(text: str) -> dict[str, Any]:
+    """Parse computer options, a JSON object: `{"sep": ", "}`."""
+    try:
+        options = json.loads(text)
+    except json.JSONDecodeError as e:
+        message = f"Invalid JSON: {e.msg}"
+        raise ValueError(message) from None
+
+    if not isinstance(options, dict):
+        message = "Options must be a JSON object"
+        raise ValueError(message)  # noqa: TRY004 - prompt validators catch ValueError
+
+    return options
+
+
+def _computer_choices() -> list[str | questionary.Separator]:
+    """List the computers under a header per group, the ungrouped ones last under 'Other'."""
+    grouped = {name for names in groups.values() for name in names}
+    other = [name for name in computers.names if name not in grouped]
+    choices: list[str | questionary.Separator] = []
+
+    for group, names in {**groups, "Other": other}.items():
+        if names:
+            choices += [questionary.Separator(f"── {group} ──"), *names]
+
+    return choices
+
+
+def _generate_computed(names: list[str]) -> Schema:
+    """Ask how a property is computed from the earlier `names`, and the type of its result.
+
+    Keyword sources (`{"alias": "path"}`), `$.` / `[*]` paths and `default` are written by hand.
+    """
+    fn = questionary.select("Compute with:", choices=_computer_choices()).unsafe_ask()
+    sources = questionary.checkbox("Computed from (in order):", choices=names).unsafe_ask()
+    options = questionary.text(
+        'Options as JSON, like {"sep": ", "} (optional):', validate=optional(validator(_to_options))
+    ).unsafe_ask()
+    spec: Schema = {"fn": fn}
+
+    if sources:
+        spec["from"] = sources
+
+    if options.strip():
+        spec["options"] = _to_options(options)
+
+    return {**generators[_ask_type("Result type:")](), KEYWORD: spec}

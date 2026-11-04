@@ -9,7 +9,7 @@ from typer_di import TyperDI
 from typer_swissknife import command
 
 from schemify.cli.dependencies.console import ConsoleDI
-from schemify.cli.dependencies.schema import FilledDataArgumentDI
+from schemify.cli.dependencies.schema import FilledDataArgumentDI, FilledListArgumentDI
 from schemify.formatters import formatters, to_json
 from schemify.generators import ask_schema
 
@@ -49,6 +49,17 @@ def _check_if_format_is_supported(name: str) -> str:
         raise typer.BadParameter(message)
 
     return name.lower()
+
+
+FormatOption = Annotated[
+    str,
+    typer.Option(
+        "-f",
+        "--format",
+        help=f"Output format ({', '.join(formatters.names)})",
+        callback=_check_if_format_is_supported,
+    ),
+]
 
 
 def _output(console: ConsoleDI, text: str, lexer: str, output: Path | None) -> None:
@@ -95,18 +106,27 @@ def fill_data(
     console: ConsoleDI,
     data: FilledDataArgumentDI,
     output: OutputOption = None,
-    output_format: Annotated[
-        str,
-        typer.Option(
-            "-f",
-            "--format",
-            help=f"Output format ({', '.join(formatters.names)})",
-            callback=_check_if_format_is_supported,
-        ),
-    ] = "json",
+    output_format: FormatOption = "json",
 ) -> None:
     """Ask for data matching a JSON Schema."""
     _output(console, formatters[output_format](data), output_format, output)
+
+
+@command(
+    app,
+    name="list",
+    aliases=("l",),
+    no_args_is_help=True,
+    help="Ask for a list of items, each matching a JSON Schema",
+)
+def fill_list(
+    console: ConsoleDI,
+    items: FilledListArgumentDI,
+    output: OutputOption = None,
+    output_format: FormatOption = "json",
+) -> None:
+    """Ask for a list of items, each matching a JSON Schema."""
+    _output(console, formatters[output_format](items), output_format, output)
 
 
 def main() -> None:

@@ -80,6 +80,19 @@ class TestFill:
         assert code == 0, text
         assert output.read_text(encoding="utf-8") == '{\n  name: "Rama",\n  age: 25\n}\n'
 
+    def test_list(self, prompts: Prompts, tmp_path: Path) -> None:
+        schema = write_json(tmp_path / "s.json", SCHEMA)
+        output = tmp_path / "people.json"
+        prompts.feed(["Rama", "25", True, "Ali", "30", False])
+        code, text = invoke("l", schema, "-o", output)
+
+        assert code == 0, text
+        assert json.loads(output.read_text(encoding="utf-8")) == [
+            {"name": "Rama", "age": 25},
+            {"name": "Ali", "age": 30},
+        ]
+        assert prompts.messages[2] == "Add another item? (1 so far)"
+
     def test_unsupported_format_fails_before_asking(self, prompts: Prompts, tmp_path: Path) -> None:
         code, text = invoke("f", write_json(tmp_path / "s.json", SCHEMA), "-f", "yaml")
 
@@ -136,7 +149,7 @@ class TestReusableDependencies:
     def test_option(self, prompts: Prompts, tmp_path: Path) -> None:
         prompts.feed(["Rama", "25"])
         schema = write_json(tmp_path / "s.json", SCHEMA)
-        result = runner.invoke(self.make_app(), ["by-option", "--schema", str(schema)])
+        result = runner.invoke(self.make_app(), ["by-option", "--json-schema", str(schema)])
 
         assert result.exit_code == 0, result.output
         assert result.output.strip() == "Rama"

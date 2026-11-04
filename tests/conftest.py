@@ -33,7 +33,8 @@ class _FakeQuestion:
             answer = self._prompts.answers.popleft()
 
             if self._choices is not None:
-                assert answer in self._choices, f"{answer!r} not in {self._choices}"
+                picked = answer if isinstance(answer, list) else [answer]  # checkbox: many
+                assert all(a in self._choices for a in picked), f"{answer!r} not in {self._choices}"
 
             result = True if self._validate is None else self._validate(answer)
 
@@ -52,7 +53,7 @@ def prompts(monkeypatch: pytest.MonkeyPatch) -> Prompts:
 
         return _FakeQuestion(scripted, kwargs.get("validate"), choices)
 
-    for name in ("text", "select", "confirm"):
+    for name in ("text", "select", "confirm", "checkbox"):
         monkeypatch.setattr(questionary, name, ask)
 
     monkeypatch.setattr(questionary, "print", lambda *_, **__: None)

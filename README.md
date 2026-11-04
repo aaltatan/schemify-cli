@@ -1,4 +1,4 @@
-# schemify
+# schemify-cli
 
 Build JSON Schemas interactively, and fill JSON data from them, from the command line.
 

@@ -1,5 +1,5 @@
 [project]
-name = "schemify"
+name = "schemify-cli"
 version = "0.1.0"
 description = "Build JSON Schemas interactively, and fill JSON data from them, from the command line."
 readme = "README.md"
@@ -38,3 +38,6 @@ testpaths = ["tests"]
 [[tool.mypy.overrides]]
 module = ["typer_swissknife", "num2words"]
 ignore_missing_imports = true
+
+[tool.uv.build-backend]
+module-name = "schemify"

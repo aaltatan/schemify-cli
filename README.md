@@ -5,13 +5,13 @@ Build JSON Schemas interactively, and fill JSON data from them, from the command
 Source: [github.com/aaltatan/schemify-cli](https://github.com/aaltatan/schemify-cli)
 
 A web version runs at [schemify.surge.sh](https://schemify.surge.sh)
-([source](https://github.com/aaltatan/schemify-web)): the same questions as fields, with the
+([source](https://github.com/aaltatan/schemify)): the same questions as fields, with the
 schema updating as you type.
 
 ## Install
 
 ```bash
-uv tool install git+https://github.com/aaltatan/schemify-cli
+uv tool install schemify-cli
 ```
 
 ## Usage
@@ -21,6 +21,19 @@ schemify generate -t Person -o person.schema.json   # ask for the properties, wr
 schemify fill person.schema.json -o person.json     # ask for one object matching it
 schemify list person.schema.json -f python          # ask for a list of them
 ```
+
+<!-- absolute URLs so the GIFs also show on PyPI -->
+`generate`: a `Person` with a `full_name` computed by joining `first` and `last`
+
+![schemify generate](https://raw.githubusercontent.com/aaltatan/schemify-cli/main/docs/demo/generate.gif)
+
+`fill`: one object, `full_name` is computed, not asked
+
+![schemify fill](https://raw.githubusercontent.com/aaltatan/schemify-cli/main/docs/demo/fill.gif)
+
+`list`: several objects, printed as Python
+
+![schemify list](https://raw.githubusercontent.com/aaltatan/schemify-cli/main/docs/demo/list.gif)
 
 | Command | Alias | Does |
 |---|---|---|
@@ -71,6 +84,14 @@ for its data: `FilledDataArgumentDI` and `FilledListArgumentDI` take the path as
 uv sync
 uv run pytest
 uv run ruff check . && uv run mypy src
+```
+
+The demo GIFs are recorded with [VHS](https://github.com/charmbracelet/vhs) (`scoop install vhs`
+or `brew install vhs`) and PowerShell (`pwsh`), from the repository root, `generate` first since
+the others use its schema:
+
+```bash
+vhs docs/demo/generate.tape && vhs docs/demo/fill.tape && vhs docs/demo/list.tape
 ```
 
 After changing `generators.py`, `validators.py` or `computers.py`, run `pnpm sync && pnpm check`

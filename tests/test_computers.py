@@ -108,6 +108,8 @@ class TestComputers:
             (lambda: computers["coalesce"](None, ""), ValueError),
             (lambda: computers["lookup"]("XX", map={}), ValueError),
             (computers["average"], ValueError),
+            (lambda: computers["words"](1, lang="ar", currency="SYP"), ValueError),
+            (lambda: computers["words"](1, lang="ar", to="currency", currency="SYP"), ValueError),
         ],
     )
     def test_errors(self, fn: Callable[[], Any], error: type[Exception]) -> None:

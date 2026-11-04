@@ -96,10 +96,13 @@ class TestPrimitives:
         assert prompts.rejected == [("1", "minimum (10) must be less than exclusiveMaximum (1)")]
 
     def test_enum(self, prompts: Prompts) -> None:
-        prompts.feed(["a, a", "red, green"])
+        prompts.feed(["", "red", " red ", "green, blue", ""])
 
-        assert generators["enum"]() == {"type": "string", "enum": ["red", "green"]}
-        assert prompts.rejected == [("a, a", "Choices must be unique")]
+        assert generators["enum"]() == {"type": "string", "enum": ["red", "green, blue"]}
+        assert prompts.rejected == [
+            ("", "Add at least one choice"),
+            (" red ", "Choice 'red' already exists"),
+        ]
 
 
 class TestContainers:
@@ -117,12 +120,12 @@ class TestContainers:
     def test_object_with_nested_array_of_objects(self, prompts: Prompts) -> None:
         prompts.feed([
             "",  # rejected, no property yet
-            "name", "string", False, "", "Full name", True,
+            "name", "string", False, "", "Full name", "", True,
             "tags", "array", "object",
-            "label", "enum", "a, b", "", "", True,
+            "label", "enum", "a", "b", "", "", "", "", True,
             "", True,  # end of the tag object, allow extra properties
             False,  # no array validators
-            "Tags", "", False,  # tags: label, no description, optional
+            "Tags", "", "", False,  # tags: label, no description, no default, optional
             "",  # end of the root object
             False,
         ])  # fmt: skip
@@ -148,8 +151,8 @@ class TestContainers:
 
     def test_computed(self, prompts: Prompts) -> None:
         prompts.feed([
-            "first", "string", False, "", "", True,
-            "last", "string", False, "", "", True,
+            "first", "string", False, "", "", "", True,
+            "last", "string", False, "", "", "", True,
             "full", "computed", "join", ["first", "last"], "{", '{"sep": ", "}', "string", False,
             "Full name", "", True,
             "",
@@ -162,6 +165,23 @@ class TestContainers:
             "x-compute": {"fn": "join", "from": ["first", "last"], "options": {"sep": ", "}},
         }
         assert prompts.rejected[0][0] == "{"
+
+    def test_defaults(self, prompts: Prompts) -> None:
+        # read as JSON, else as text, the first matching the property schema is kept
+        prompts.feed([
+            "age", "integer", False, "", "", "x", "30", True,
+            "code", "string", False, "", "", "42", False,
+            "tags", "array", "string", False, False, "", "", '["a"]', False,
+            "",
+            False,
+        ])  # fmt: skip
+
+        assert generators["object"]()["properties"] == {
+            "age": {"type": "integer", "default": 30},
+            "code": {"type": "string", "default": "42"},
+            "tags": {"type": "array", "items": {"type": "string"}, "default": ["a"]},
+        }
+        assert prompts.rejected == [("x", "'x' is not of type 'integer'")]
 
     def test_computer_choices_are_grouped(self) -> None:
         computers.add(lambda: None, "custom")
@@ -193,7 +213,7 @@ class TestContainers:
 
     def test_computed_without_options_is_not_asked_them(self, prompts: Prompts) -> None:
         prompts.feed([
-            "name", "string", False, "", "", True,
+            "name", "string", False, "", "", "", True,
             "loud", "computed", "upper", ["name"], "string", False, "", "", True,
             "",
             False,
@@ -212,7 +232,7 @@ class TestContainers:
             generators["object"]()
 
     def test_ask_schema(self, prompts: Prompts) -> None:
-        prompts.feed(["done", "boolean", "", "", True, "", False])
+        prompts.feed(["done", "boolean", "", "", "", True, "", False])
 
         assert ask_schema("Task") == {
             "$schema": SCHEMA_DIALECT,

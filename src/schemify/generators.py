@@ -15,9 +15,10 @@ from .validators import (
     NUMBER_CONSTRAINTS,
     STRING_CONSTRAINTS,
     Constraint,
+    default_parser,
+    is_choice,
     is_property_name,
     optional,
-    to_choices,
     validator,
     within_bounds,
 )
@@ -132,12 +133,17 @@ def generate_datetime() -> Schema:
 
 @generators.register("enum")
 def generate_enum() -> Schema:
-    """Ask for a string limited to choices."""
-    answer = questionary.text(
-        "Choices, comma separated:", validate=validator(to_choices)
-    ).unsafe_ask()
+    """Ask for a string limited to choices, one per prompt."""
+    choices: list[str] = []
 
-    return {"type": "string", "enum": to_choices(answer)}
+    while choice := (
+        questionary.text("Choice (empty to finish):", validate=is_choice(choices))
+        .unsafe_ask()
+        .strip()
+    ):
+        choices.append(choice)
+
+    return {"type": "string", "enum": choices}
 
 
 # -----------------------
@@ -164,7 +170,7 @@ def generate_array() -> Schema:
 
 @generators.register("object")
 def generate_object() -> Schema:
-    """Ask for an object: each property name, type, label, description and if it is required.
+    """Ask for an object: each property name, type, label, description, default, and if required.
 
     The label is saved as the JSON Schema `title`, fillers show it instead of the property name.
     """
@@ -198,6 +204,16 @@ def generate_object() -> Schema:
             **{keyword: value for keyword, value in annotations.items() if value},
             **property_schema,
         }
+
+        # a computed property sets its own `default` in `x-compute`
+        if type_name != "computed":
+            parse = default_parser(property_schema)
+            default = questionary.text(
+                f"Default value of '{name}' (optional):", validate=optional(validator(parse))
+            ).unsafe_ask()
+
+            if default.strip():
+                properties[name]["default"] = parse(default)
 
         if questionary.confirm(f"Is '{name}' required?", default=True).unsafe_ask():
             required.append(name)

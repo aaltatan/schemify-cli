@@ -35,7 +35,7 @@ def write_json(path: Path, value: object) -> Path:
 
 class TestGenerate:
     def test_saves_schema(self, prompts: Prompts, tmp_path: Path) -> None:
-        prompts.feed(["done", "boolean", "", "", True, "", False])
+        prompts.feed(["done", "boolean", "", "", "", True, "", False])
         output = tmp_path / "out" / "task.json"
         code, text = invoke("g", "-t", "Task", "-o", output)
 
@@ -43,7 +43,7 @@ class TestGenerate:
         assert json.loads(output.read_text(encoding="utf-8"))["title"] == "Task"
 
     def test_prints_schema(self, prompts: Prompts) -> None:
-        prompts.feed(["done", "boolean", "", "", True, "", False])
+        prompts.feed(["done", "boolean", "", "", "", True, "", False])
         code, text = invoke("generate")
 
         assert code == 0, text

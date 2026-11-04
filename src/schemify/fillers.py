@@ -2,6 +2,8 @@
 
 The kind is `enum` when the schema has choices, else its `format` when a filler is
 registered for it (`date`, `date-time`), else its `type`.
+
+A schema `default` is offered as the answer of a text, boolean or enum prompt.
 """
 
 from collections.abc import Callable
@@ -158,7 +160,10 @@ def _text_filler(parse: Parser) -> FillFn:
 
             return error is None or error
 
-        answer = questionary.text(_message(schema, label), validate=validate).unsafe_ask()
+        default = str(schema["default"]) if "default" in schema else ""
+        answer = questionary.text(
+            _message(schema, label), default=default, validate=validate
+        ).unsafe_ask()
 
         if not required and not answer.strip():
             return MISSING
@@ -186,7 +191,9 @@ def fill_boolean(schema: Schema, label: str, required: bool) -> Any:  # noqa: FB
     if _skipped(schema, label, required=required):
         return MISSING
 
-    return questionary.confirm(_message(schema, label), default=False).unsafe_ask()
+    default = schema.get("default") is True
+
+    return questionary.confirm(_message(schema, label), default=default).unsafe_ask()
 
 
 @fillers.register("enum")
@@ -196,7 +203,10 @@ def fill_enum(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT00
         return MISSING
 
     choices = {str(choice): choice for choice in schema["enum"]}
-    answer = questionary.select(_message(schema, label), choices=list(choices)).unsafe_ask()
+    default = str(schema["default"]) if schema.get("default") in schema["enum"] else None
+    answer = questionary.select(
+        _message(schema, label), choices=list(choices), default=default
+    ).unsafe_ask()
 
     return choices[answer]
 
@@ -208,7 +218,10 @@ def fill_enum(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT00
 
 @fillers.register("array")
 def fill_array(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT001
-    """Ask items until the user stops, respecting `minItems`, `maxItems` and `uniqueItems`."""
+    """Ask items until the user stops, respecting `minItems`, `maxItems` and `uniqueItems`.
+
+    shortcut: a `default` of the whole array is not offered, its items are asked one by one.
+    """
     if _skipped(schema, label, required=required):
         return MISSING
 

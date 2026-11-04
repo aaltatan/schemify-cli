@@ -16,6 +16,8 @@ class Prompts:
 
     answers: deque[Any] = field(default_factory=deque)
     messages: list[str] = field(default_factory=list)
+    defaults: list[Any] = field(default_factory=list)
+    """The `default=` each prompt offered, `None` when none."""
     rejected: list[tuple[Any, bool | str]] = field(default_factory=list)
 
     def feed(self, answers: list[Any]) -> None:
@@ -50,6 +52,7 @@ def prompts(monkeypatch: pytest.MonkeyPatch) -> Prompts:
 
     def ask(message: str, choices: list[str] | None = None, **kwargs: Any) -> _FakeQuestion:
         scripted.messages.append(message)
+        scripted.defaults.append(kwargs.get("default"))
 
         return _FakeQuestion(scripted, kwargs.get("validate"), choices)
 

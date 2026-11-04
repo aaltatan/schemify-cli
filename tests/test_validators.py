@@ -4,6 +4,7 @@ from schemify.validators import (
     check_bounds,
     check_schema,
     check_value,
+    is_choice,
     is_property_name,
     optional,
     to_choices,
@@ -84,6 +85,12 @@ class TestPromptValidators:
 
         assert validate("  ") is True
         assert validate("x") == "'x' is not an integer"
+
+    def test_is_choice(self) -> None:
+        assert is_choice([])("") == "Add at least one choice"
+        assert is_choice(["red"])("") is True
+        assert is_choice(["red"])(" red ") == "Choice 'red' already exists"
+        assert is_choice(["red"])("green") is True
 
     def test_is_property_name(self) -> None:
         assert is_property_name({})("") == "Add at least one property"

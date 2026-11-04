@@ -494,6 +494,15 @@ def words(value: Any, lang: str = "en", to: str = "cardinal", currency: str | No
     `to` is cardinal, ordinal, ordinal_num, year or currency (with an ISO `currency` like `USD`),
     `lang` is like `en`, `ar` or `fr`.
     """
+    if currency and to != "currency":
+        message = f"The 'currency' option needs \"to\": \"currency\", not '{to}'"
+        raise ValueError(message)
+
+    # num2words' Arabic falls back to riyal for any other code instead of raising
+    if to == "currency" and lang == "ar" and (currency or "SR") not in {"SR", "EGP", "KWD", "TND"}:
+        message = f"Arabic has no '{currency}' currency, only SR, EGP, KWD and TND"
+        raise ValueError(message)
+
     extra = {"currency": currency} if currency else {}
 
     return num2words(value, lang=lang, to=to, **extra)

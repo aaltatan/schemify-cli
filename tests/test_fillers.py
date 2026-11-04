@@ -70,6 +70,17 @@ class TestLeaves:
         assert fill({"type": "boolean"}, "ok") is True
         assert fill({"enum": [1, 2]}, "level") == 2
 
+    def test_defaults_are_offered(self, prompts: Prompts) -> None:
+        prompts.feed(["Rama", "30", True, "b", "x"])
+
+        fill({"type": "string", "default": "Rama"}, "name")
+        fill({"type": "integer", "default": 30}, "age")
+        fill({"type": "boolean", "default": True}, "ok")
+        fill({"enum": ["a", "b"], "default": "b"}, "level")
+        fill({"type": "string"}, "note")
+
+        assert prompts.defaults == ["Rama", "30", True, "b", ""]
+
     def test_optional_choice_asks_first(self, prompts: Prompts) -> None:
         prompts.feed([False])
 
@@ -144,9 +155,9 @@ class TestAskData:
 
     def test_round_trip(self, prompts: Prompts) -> None:
         prompts.feed([
-            "name", "string", True, "none", False, "2", "", "", "", "Full name", "", True,
-            "born", "date", "", "", True,
-            "role", "enum", "admin, user", "", "", False,
+            "name", "string", True, "none", False, "2", "", "", "", "Full name", "", "", True,
+            "born", "date", "", "", "", True,
+            "role", "enum", "admin", "user", "", "", "", "", False,
             "", False,
         ])  # fmt: skip
         schema = ask_schema("Person")

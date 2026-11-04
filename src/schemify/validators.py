@@ -4,6 +4,8 @@ Prompt validators follow the questionary `validate=` contract:
 they return `True` when the answer is valid, else the error message.
 """
 
+import contextlib
+import json
 import math
 import re
 from collections.abc import Callable, Collection
@@ -120,6 +122,30 @@ def to_datetime(text: str) -> str:
     return (value if value.tzinfo else value.astimezone()).isoformat()
 
 
+def default_parser(schema: Schema) -> Parser:
+    """Build a parser for a default value of `schema`.
+
+    The answer is read as JSON (`42`, `true`, `["a"]`), else as text, the first matching `schema`
+    is kept: `42` is a number for an integer and the text `"42"` for a string.
+    """
+
+    def parse(text: str) -> Any:
+        candidates: list[Any] = [text.strip()]
+
+        with contextlib.suppress(json.JSONDecodeError):
+            candidates.insert(0, json.loads(text))
+
+        errors = [check_value(schema, candidate) for candidate in candidates]
+
+        for candidate, error in zip(candidates, errors, strict=True):
+            if error is None:
+                return candidate
+
+        raise ValueError(errors[0])
+
+    return parse
+
+
 # -----------------------
 # prompt validators
 # -----------------------
@@ -142,6 +168,20 @@ def validator(parse: Parser) -> PromptValidator:
 def optional(validate: PromptValidator) -> PromptValidator:
     """Accept an empty answer (to skip), else run `validate`."""
     return lambda text: not text.strip() or validate(text)
+
+
+def is_choice(existing: Collection[str]) -> PromptValidator:
+    """Accept a new enum choice, or an empty answer to finish once one choice exists."""
+
+    def validate(text: str) -> bool | str:
+        choice = text.strip()
+
+        if not choice:
+            return bool(existing) or "Add at least one choice"
+
+        return choice not in existing or f"Choice '{choice}' already exists"
+
+    return validate
 
 
 def is_property_name(existing: Collection[str]) -> PromptValidator:

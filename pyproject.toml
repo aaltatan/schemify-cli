@@ -1,6 +1,6 @@
 [project]
 name = "schemify-cli"
-version = "0.1.0"
+version = "0.2.0"
 description = "Build JSON Schemas interactively, and fill JSON data from them, from the command line."
 readme = "README.md"
 authors = [

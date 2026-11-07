@@ -76,7 +76,9 @@ Built-in computers:
 
 `schemify.cli.dependencies.schema` exposes typer-di dependencies that load a schema file and ask
 for its data: `FilledDataArgumentDI` and `FilledListArgumentDI` take the path as an argument,
-`FilledDataOptionDI` and `FilledListOptionDI` as `--js`.
+`FilledDataOptionDI` and `FilledListOptionDI` as `--js`. When the path is optional or comes from
+elsewhere, call `load_schema(path)` and `ask_or_abort(schema, ask_data)` directly: both report
+failures as typer errors.
 
 ## Development
 

@@ -36,7 +36,13 @@ _PATH_HELP = "Path to the JSON Schema file"
 # -----------------------
 
 
-def _load_schema(path: Path) -> Schema:
+def load_schema(path: Path) -> Schema:
+    """Read a valid JSON Schema from `path`, a bad file is reported as a usage error.
+
+    Raises:
+        typer.BadParameter: The file is not JSON, or is not a valid JSON Schema.
+
+    """
     try:
         schema = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, UnicodeDecodeError) as e:
@@ -66,7 +72,7 @@ def _schema_from_option(
         ),
     ],
 ) -> Schema:
-    return _load_schema(path)
+    return load_schema(path)
 
 
 def _schema_from_argument(
@@ -81,12 +87,28 @@ def _schema_from_argument(
         ),
     ],
 ) -> Schema:
-    return _load_schema(path)
+    return load_schema(path)
 
 
 # -----------------------
 # filled data
 # -----------------------
+
+
+def ask_or_abort[T](schema: Schema, ask: Callable[[Schema], T] = ask_data) -> T:
+    """Ask for data with `ask`, reporting failures the way a typer app expects.
+
+    Raises:
+        typer.BadParameter: The schema can not be filled, or the data does not match it.
+        typer.Abort: The user pressed Ctrl+C.
+
+    """
+    try:
+        return ask(schema)
+    except (NotSupportedError, InvalidDataError) as e:
+        raise typer.BadParameter(str(e)) from e
+    except KeyboardInterrupt:
+        raise typer.Abort from None
 
 
 def _filled_data(
@@ -95,12 +117,7 @@ def _filled_data(
     """Build a dependency asking (with `ask`) for data matching the schema `read_schema` injects."""
 
     def fill(schema: Annotated[Schema, Depends(read_schema)]) -> Any:
-        try:
-            return ask(schema)
-        except (NotSupportedError, InvalidDataError) as e:
-            raise typer.BadParameter(str(e)) from e
-        except KeyboardInterrupt:
-            raise typer.Abort from None
+        return ask_or_abort(schema, ask)
 
     return fill
 

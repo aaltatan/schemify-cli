@@ -12,5 +12,5 @@ editor mirroring `schemify generate`. Its `CLAUDE.md` lists which file mirrors w
   (type names, constraint questions, computer signatures and options examples), and its tests
   fail until the editor handles what was added.
 - `scripts/export_meta.py` in the editor reads `SCHEMA_DIALECT`, `generators`, the
-  `*_CONSTRAINTS` lists, `computers`, `groups` and `_options_example` from here: keep them, or
+  `*_CONSTRAINTS` lists, `computers`, `groups` and `options_example` from here: keep them, or
   update the exporter when renaming one.

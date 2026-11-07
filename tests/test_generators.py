@@ -6,9 +6,9 @@ from schemify.computers import computers
 from schemify.generators import (
     SCHEMA_DIALECT,
     _computer_choices,
-    _options_example,
     ask_schema,
     generators,
+    options_example,
 )
 from schemify.registry import NotSupportedError, Registry
 
@@ -209,7 +209,7 @@ class TestContainers:
         ],
     )
     def test_options_example(self, name: str, sources: int, expected: object) -> None:
-        assert _options_example(computers[name], sources) == expected
+        assert options_example(computers[name], sources) == expected
 
     def test_computed_without_options_is_not_asked_them(self, prompts: Prompts) -> None:
         prompts.feed([

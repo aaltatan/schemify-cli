@@ -263,7 +263,7 @@ _PLACEHOLDERS: dict[Any, Any] = {str: "text", int: 1, float: 1.5, bool: True, di
 _JSON_TYPES = (str, int, float, bool, dict, list, type(None))
 
 
-def _options_example(fn: Callable[..., Any], sources: int) -> dict[str, Any] | None:
+def options_example(fn: Callable[..., Any], sources: int) -> dict[str, Any] | None:
     """Return example options of `fn` once `sources` values fill its first parameters.
 
     An option with a default shows it, a required one a placeholder of its type.
@@ -305,7 +305,7 @@ def _generate_computed(names: list[str]) -> Schema:
     fn = questionary.select("Compute with:", choices=_computer_choices()).unsafe_ask()
     _describe(fn, computers[fn])
     sources = questionary.checkbox("Computed from (in order):", choices=names).unsafe_ask()
-    example = _options_example(computers[fn], len(sources))
+    example = options_example(computers[fn], len(sources))
     spec: Schema = {"fn": fn}
 
     if sources:

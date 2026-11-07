@@ -636,7 +636,14 @@ def equals(value: Any, other: Any) -> bool:
     return value == other
 
 
-_NO_FALLBACK: Any = object()
+class _NoFallback:
+    """A default shown in signatures, which reach users and `meta.json`, so its text is stable."""
+
+    def __repr__(self) -> str:
+        return "<no fallback>"
+
+
+_NO_FALLBACK: Any = _NoFallback()
 
 
 @_register("Logic, lookup and misc", "lookup")

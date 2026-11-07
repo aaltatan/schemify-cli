@@ -1,3 +1,4 @@
+import inspect
 import re
 from collections.abc import Callable
 from datetime import date
@@ -115,6 +116,10 @@ class TestComputers:
     def test_errors(self, fn: Callable[[], Any], error: type[Exception]) -> None:
         with pytest.raises(error):
             fn()
+
+    @pytest.mark.parametrize("name", computers.names)
+    def test_signature_is_stable_across_runs(self, name: str) -> None:
+        assert " at 0x" not in str(inspect.signature(computers[name]))
 
 
 class TestExpr:

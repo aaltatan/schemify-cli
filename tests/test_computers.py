@@ -48,8 +48,9 @@ class TestComputers:
             ("percent_of", [200, 15], {}, 30),
             # words
             ("words", [12], {}, "twelve"),
-            ("words", [2], {"to": "ordinal"}, "second"),
-            ("words", [1.5], {"to": "currency", "currency": "USD"}, "one dollar, fifty cents"),
+            ("words", [12], {"suffix": "USD"}, "twelve USD"),
+            ("words", [12], {"prefix": "only", "suffix": "USD"}, "only twelve USD"),
+            ("words", [1.5], {"prefix": "only"}, "only one point five"),
             ("words", [3], {"lang": "ar"}, "ثلاثة"),
             # dates
             ("add_days", ["2026-12-31"], {"days": 1}, "2027-01-01"),
@@ -99,6 +100,33 @@ class TestComputers:
     def test_today_is_today(self) -> None:
         assert computers["today"]() == date.today().isoformat()  # noqa: DTZ011
 
+    def test_dates_default_to_today(self) -> None:
+        now = date.today()  # noqa: DTZ011
+        iso = now.isoformat()
+
+        for name in ("add_days", "add_months", "add_years"):
+            assert computers[name]() == iso
+            assert computers[name](None) == iso
+
+        assert computers["add_days"](days=1) == computers["add_days"](iso, 1)
+        assert computers["add_months"](months=1) == computers["add_months"](iso, 1)
+        assert computers["add_years"](years=1) == computers["add_years"](iso, 1)
+        assert computers["days_between"](iso) == 0
+        assert computers["year"]() == now.year
+        assert computers["month"]() == now.month
+        assert computers["day"]() == now.day
+        assert computers["weekday"]() == computers["weekday"](iso)
+        assert computers["format_date"]() == computers["format_date"](iso)
+        assert computers["start_of_month"]() == computers["start_of_month"](iso)
+        assert computers["end_of_month"]() == computers["end_of_month"](iso)
+
+    def test_required_dates_do_not_default(self) -> None:
+        with pytest.raises(TypeError):
+            computers["days_between"](None)
+
+        with pytest.raises(TypeError):
+            computers["age"](None)
+
     def test_template(self) -> None:
         assert computers["template"]("{n} @ {c}", n="Rama", c="Acme") == "Rama @ Acme"
 
@@ -109,8 +137,7 @@ class TestComputers:
             (lambda: computers["coalesce"](None, ""), ValueError),
             (lambda: computers["lookup"]("XX", map={}), ValueError),
             (computers["average"], ValueError),
-            (lambda: computers["words"](1, lang="ar", currency="SYP"), ValueError),
-            (lambda: computers["words"](1, lang="ar", to="currency", currency="SYP"), ValueError),
+            (lambda: computers["words"](1, lang="xx"), NotImplementedError),
         ],
     )
     def test_errors(self, fn: Callable[[], Any], error: type[Exception]) -> None:

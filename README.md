@@ -67,8 +67,9 @@ Built-in computers:
 - **Numbers**: sum, subtract, multiply, divide, average, min, max, abs, round, percent,
   percent_of, expr
 - **Dates**: today, now, add_days, add_months, add_years, days_between, age, year, month, day,
-  weekday, format_date, start_of_month, end_of_month
-- **Number to words**: words
+  weekday, format_date, start_of_month, end_of_month (a date left out or missing with `?` is
+  today, computed each run)
+- **Number to words**: words (options: `lang`, `prefix`, `suffix`)
 - **Logic, lookup and misc**: coalesce, if_else, equals, lookup, constant, count, count_if,
   unique, uuid
 

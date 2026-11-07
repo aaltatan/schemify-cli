@@ -201,7 +201,7 @@ class TestContainers:
             ("upper", 0, {"value": "value"}),
             ("replace", 1, {"old": "text", "new": "text"}),
             ("round", 1, {"digits": 2}),
-            ("words", 1, {"lang": "en", "to": "cardinal", "currency": None}),
+            ("words", 1, {"lang": "en", "prefix": "", "suffix": ""}),
             ("lookup", 1, {"map": {}, "fallback": "value"}),
             ("expr", 0, {"expr": "text"}),
             ("template", 1, {}),  # takes any named values

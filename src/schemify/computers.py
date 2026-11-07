@@ -16,6 +16,9 @@ Paths are relative to the object owning the property (`name`, `address.city`, `i
 or to the data root (`$.company`). `items[*].price` gives the list of every item price.
 A path ending with `?` gives `None` when missing instead of skipping the computation,
 for optional parts like `middle_name?` in a `join`.
+
+Date computers compute today as their date when it is left out or `None`, so `year` with no
+source is the current year, and `format_date` from `issued?` is today when `issued` is skipped.
 """
 
 import ast
@@ -209,6 +212,11 @@ def _present(values: Iterable[Any]) -> list[Any]:
 def _date(value: str) -> date:
     """Parse an ISO date or datetime string."""
     return datetime.fromisoformat(value).date()
+
+
+def _date_or_today(value: str | None) -> date:
+    """Parse an ISO date, computing today's when there is none, so it is never a stale default."""
+    return _date(value) if value else date.today()  # noqa: DTZ011
 
 
 # -----------------------
@@ -488,24 +496,12 @@ def _evaluate(node: ast.AST, names: dict[str, Any]) -> Any:  # noqa: C901, PLR09
 
 
 @_register("Number to words", "words")
-def words(value: Any, lang: str = "en", to: str = "cardinal", currency: str | None = None) -> str:
-    """Spell a number: `words(12) == "twelve"`.
+def words(value: Any, lang: str = "en", prefix: str = "", suffix: str = "") -> str:
+    """Spell a number: `words(12, prefix="only", suffix="USD") == "only twelve USD"`.
 
-    `to` is cardinal, ordinal, ordinal_num, year or currency (with an ISO `currency` like `USD`),
     `lang` is like `en`, `ar` or `fr`.
     """
-    if currency and to != "currency":
-        message = f"The 'currency' option needs \"to\": \"currency\", not '{to}'"
-        raise ValueError(message)
-
-    # num2words' Arabic falls back to riyal for any other code instead of raising
-    if to == "currency" and lang == "ar" and (currency or "SR") not in {"SR", "EGP", "KWD", "TND"}:
-        message = f"Arabic has no '{currency}' currency, only SR, EGP, KWD and TND"
-        raise ValueError(message)
-
-    extra = {"currency": currency} if currency else {}
-
-    return num2words(value, lang=lang, to=to, **extra)
+    return join(prefix, num2words(value, lang=lang), suffix)
 
 
 # -----------------------
@@ -526,15 +522,18 @@ def now() -> str:
 
 
 @_register("Dates", "add_days")
-def add_days(value: str, days: int) -> str:
-    """Add (or subtract) days to an ISO date."""
-    return date.fromordinal(_date(value).toordinal() + days).isoformat()
+def add_days(value: str | None = None, days: int = 0) -> str:
+    """Add (or subtract) days to an ISO date (today by default)."""
+    return date.fromordinal(_date_or_today(value).toordinal() + days).isoformat()
 
 
 @_register("Dates", "add_months")
-def add_months(value: str, months: int) -> str:
-    """Add months, clamping to the month end: `add_months("2026-01-31", 1) == "2026-02-28"`."""
-    day = _date(value)
+def add_months(value: str | None = None, months: int = 0) -> str:
+    """Add months to a date (today by default), clamping to the month end.
+
+    `add_months("2026-01-31", 1) == "2026-02-28"`.
+    """
+    day = _date_or_today(value)
     years, month = divmod(day.month - 1 + months, 12)
     year = day.year + years
     last_day = calendar.monthrange(year, month + 1)[1]
@@ -543,66 +542,66 @@ def add_months(value: str, months: int) -> str:
 
 
 @_register("Dates", "add_years")
-def add_years(value: str, years: int) -> str:
-    """Add years, Feb 29 becomes Feb 28 on a non leap year."""
+def add_years(value: str | None = None, years: int = 0) -> str:
+    """Add years to a date (today by default), Feb 29 becomes Feb 28 on a non leap year."""
     return add_months(value, years * 12)
 
 
 @_register("Dates", "days_between")
-def days_between(start: str, end: str) -> int:
-    """Days from `start` to `end`, negative when `end` is before."""
-    return (_date(end) - _date(start)).days
+def days_between(start: str, end: str | None = None) -> int:
+    """Days from `start` to `end` (today by default), negative when `end` is before."""
+    return (_date_or_today(end) - _date(start)).days
 
 
 @_register("Dates", "age")
 def age(birth_date: str, on: str | None = None) -> int:
     """Whole years from `birth_date` to `on` (today by default)."""
     born = _date(birth_date)
-    day = _date(on) if on else date.today()  # noqa: DTZ011
+    day = _date_or_today(on)
 
     return day.year - born.year - ((day.month, day.day) < (born.month, born.day))
 
 
 @_register("Dates", "year")
-def year(value: str) -> int:
-    """Return the year of an ISO date."""
-    return _date(value).year
+def year(value: str | None = None) -> int:
+    """Return the year of an ISO date (today by default)."""
+    return _date_or_today(value).year
 
 
 @_register("Dates", "month")
-def month(value: str) -> int:
-    """Return the month (1 to 12) of an ISO date."""
-    return _date(value).month
+def month(value: str | None = None) -> int:
+    """Return the month (1 to 12) of an ISO date (today by default)."""
+    return _date_or_today(value).month
 
 
 @_register("Dates", "day")
-def day(value: str) -> int:
-    """Return the day of the month of an ISO date."""
-    return _date(value).day
+def day(value: str | None = None) -> int:
+    """Return the day of the month of an ISO date (today by default)."""
+    return _date_or_today(value).day
 
 
 @_register("Dates", "weekday")
-def weekday(value: str, fmt: str = "%A") -> str:
-    """Return the weekday name of an ISO date: `Wednesday`."""
-    return _date(value).strftime(fmt)
+def weekday(value: str | None = None, fmt: str = "%A") -> str:
+    """Return the weekday name of an ISO date (today by default): `Wednesday`."""
+    return _date_or_today(value).strftime(fmt)
 
 
 @_register("Dates", "format_date")
-def format_date(value: str, fmt: str = "%d/%m/%Y") -> str:
-    """Format an ISO date or datetime with `strftime` codes."""
-    return datetime.fromisoformat(value).strftime(fmt)
+def format_date(value: str | None = None, fmt: str = "%d/%m/%Y") -> str:
+    """Format an ISO date or datetime (now by default) with `strftime` codes."""
+    return datetime.fromisoformat(value or now()).strftime(fmt)
 
 
 @_register("Dates", "start_of_month")
-def start_of_month(value: str) -> str:
-    """Return the first day of the month of an ISO date."""
-    return _date(value).replace(day=1).isoformat()
+def start_of_month(value: str | None = None) -> str:
+    """Return the first day of the month of an ISO date (today by default)."""
+    return _date_or_today(value).replace(day=1).isoformat()
 
 
 @_register("Dates", "end_of_month")
-def end_of_month(value: str) -> str:
-    """Return the last day of the month of an ISO date."""
-    day = _date(value)
+def end_of_month(value: str | None = None) -> str:
+    """Return the last day of the month of an ISO date (today by default)."""
+    day = _date_or_today(value)
 
     return day.replace(day=calendar.monthrange(day.year, day.month)[1]).isoformat()
 

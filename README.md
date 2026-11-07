@@ -97,4 +97,4 @@ vhs docs/demo/generate.tape && vhs docs/demo/fill.tape && vhs docs/demo/list.tap
 ```
 
 After changing `generators.py`, `validators.py` or `computers.py`, run `pnpm sync && pnpm check`
-in [schemify-web](https://github.com/aaltatan/schemify-web) so it stays in step.
+in [the schemify editor](https://github.com/aaltatan/schemify) so it stays in step.

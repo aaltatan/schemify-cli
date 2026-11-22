@@ -11,7 +11,6 @@ from typing import Any
 
 import questionary
 
-from .computers import KEYWORD, ComputeError, compute
 from .models import Schema
 from .registry import NotSupportedError, Registry
 from .validators import Parser, check_value, to_date, to_datetime, to_int, to_number
@@ -40,21 +39,12 @@ class InvalidDataError(Exception):
 def ask_data(schema: Schema) -> Any:
     """Ask the user for data matching `schema`, usually an object, and return it.
 
-    The `x-compute` properties are not asked, they are computed once the data is entered.
-
     Raises:
-        NotSupportedError: A part of the schema has no filler (like `$ref` or `oneOf`),
-            or a computed property names an unknown computer.
-        InvalidDataError: A property can not be computed,
-            or the data does not match the whole schema.
+        NotSupportedError: A part of the schema has no filler (like `$ref` or `oneOf`).
+        InvalidDataError: The data does not match the whole schema.
 
     """
     data = fill(schema, "")
-
-    try:
-        compute(schema, data)
-    except ComputeError as e:
-        raise InvalidDataError(e) from e
     error = check_value(schema, data)
 
     if error is not None:
@@ -66,11 +56,11 @@ def ask_data(schema: Schema) -> Any:
 def ask_list(schema: Schema) -> list[Any]:
     """Ask for items matching `schema` until the user stops, at least one, and return them.
 
-    Each item is asked, computed and checked like `ask_data`, so `$.` paths point to the item.
+    Each item is asked and checked like `ask_data`.
 
     Raises:
-        NotSupportedError: A part of the schema has no filler, or names an unknown computer.
-        InvalidDataError: An item can not be computed, or does not match the whole schema.
+        NotSupportedError: A part of the schema has no filler.
+        InvalidDataError: An item does not match the whole schema.
 
     """
     items: list[Any] = []
@@ -252,7 +242,7 @@ def fill_array(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT0
 
 @fillers.register("object")
 def fill_object(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT001
-    """Ask each property in order, optional ones can be skipped, computed ones are not asked."""
+    """Ask each property in order, optional ones can be skipped."""
     if _skipped(schema, label, required=required):
         return MISSING
 
@@ -260,9 +250,6 @@ def fill_object(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT
     data: dict[str, Any] = {}
 
     for name, property_schema in schema.get("properties", {}).items():
-        if KEYWORD in property_schema:
-            continue
-
         path = f"{label}.{name}" if label else name
         value = fill(property_schema, path, required=name in required_names)
 

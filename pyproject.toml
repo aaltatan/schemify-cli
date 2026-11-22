@@ -9,7 +9,6 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "jsonschema>=4.26.0",
-    "num2words>=0.5.14",
     "questionary>=2.1.1",
     "rich>=15.0.0",
     "typer>=0.29.0",
@@ -36,7 +35,7 @@ dev = [
 testpaths = ["tests"]
 
 [[tool.mypy.overrides]]
-module = ["typer_swissknife", "num2words"]
+module = ["typer_swissknife"]
 ignore_missing_imports = true
 
 [tool.uv.build-backend]

@@ -24,13 +24,6 @@ Type "age" Enter Sleep 400ms Up Sleep 200ms Up Sleep 200ms Up Sleep 400ms Enter 
 Enter Enter Enter Sleep 400ms
 Type "n" Sleep 600ms
 
-# full_name: computed with join
-Type "full_name" Enter Sleep 400ms Down Sleep 400ms Enter Sleep 600ms
-Enter Sleep 800ms
-Space Sleep 300ms Down Sleep 300ms Space Sleep 400ms Enter Sleep 400ms
-Enter Sleep 300ms Enter Sleep 300ms Enter Sleep 300ms
-Type "Full name" Enter Sleep 300ms Enter Sleep 300ms Enter Sleep 600ms
-
 # finish, no extra properties
 Enter Sleep 400ms Enter
 Sleep 1500ms

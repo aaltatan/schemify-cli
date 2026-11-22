@@ -1,14 +1,10 @@
 from collections.abc import Callable
 
 import pytest
-import questionary
-from schemify.computers import computers
 from schemify.generators import (
     SCHEMA_DIALECT,
-    _computer_choices,
     ask_schema,
     generators,
-    options_example,
 )
 from schemify.registry import NotSupportedError, Registry
 
@@ -149,23 +145,6 @@ class TestContainers:
         }
         assert prompts.rejected == [("", "Add at least one property")]
 
-    def test_computed(self, prompts: Prompts) -> None:
-        prompts.feed([
-            "first", "string", False, "", "", "", True,
-            "last", "string", False, "", "", "", True,
-            "full", "computed", "join", ["first", "last"], "{", '{"sep": ", "}', "string", False,
-            "Full name", "", True,
-            "",
-            False,
-        ])  # fmt: skip
-
-        assert generators["object"]()["properties"]["full"] == {
-            "title": "Full name",
-            "type": "string",
-            "x-compute": {"fn": "join", "from": ["first", "last"], "options": {"sep": ", "}},
-        }
-        assert prompts.rejected[0][0] == "{"
-
     def test_defaults(self, prompts: Prompts) -> None:
         # read as JSON, else as text, the first matching the property schema is kept
         prompts.feed([
@@ -182,54 +161,6 @@ class TestContainers:
             "tags": {"type": "array", "items": {"type": "string"}, "default": ["a"]},
         }
         assert prompts.rejected == [("x", "'x' is not of type 'integer'")]
-
-    def test_computer_choices_are_grouped(self) -> None:
-        computers.add(lambda: None, "custom")
-        choices = _computer_choices()
-        headers = [c.title for c in choices if isinstance(c, questionary.Separator)]
-
-        assert headers[0] == "── Text ──"
-        assert headers[-1] == "── Other ──"
-        assert choices[-1] == "custom"
-        assert sorted(c for c in choices if isinstance(c, str)) == computers.names
-
-    @pytest.mark.parametrize(
-        ("name", "sources", "expected"),
-        [
-            ("join", 2, {"sep": " "}),
-            ("upper", 1, None),
-            ("upper", 0, {"value": "value"}),
-            ("replace", 1, {"old": "text", "new": "text"}),
-            ("round", 1, {"digits": 2}),
-            ("words", 1, {"lang": "en", "prefix": "", "suffix": ""}),
-            ("lookup", 1, {"map": {}, "fallback": "value"}),
-            ("expr", 0, {"expr": "text"}),
-            ("template", 1, {}),  # takes any named values
-            ("today", 0, None),
-        ],
-    )
-    def test_options_example(self, name: str, sources: int, expected: object) -> None:
-        assert options_example(computers[name], sources) == expected
-
-    def test_computed_without_options_is_not_asked_them(self, prompts: Prompts) -> None:
-        prompts.feed([
-            "name", "string", False, "", "", "", True,
-            "loud", "computed", "upper", ["name"], "string", False, "", "", True,
-            "",
-            False,
-        ])  # fmt: skip
-
-        assert generators["object"]()["properties"]["loud"]["x-compute"] == {
-            "fn": "upper",
-            "from": ["name"],
-        }
-        assert not any(m.startswith("Options") for m in prompts.messages)
-
-    def test_computed_needs_a_property(self, prompts: Prompts) -> None:
-        prompts.feed(["first", "computed"])
-
-        with pytest.raises(AssertionError, match="'computed' not in"):
-            generators["object"]()
 
     def test_ask_schema(self, prompts: Prompts) -> None:
         prompts.feed(["done", "boolean", "", "", "", True, "", False])

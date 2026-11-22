@@ -23,11 +23,11 @@ schemify list person.schema.json -f python          # ask for a list of them
 ```
 
 <!-- absolute URLs so the GIFs also show on PyPI -->
-`generate`: a `Person` with a `full_name` computed by joining `first` and `last`
+`generate`: a `Person` with `first`, `last` and an optional `age`
 
 ![schemify generate](https://raw.githubusercontent.com/aaltatan/schemify-cli/main/docs/demo/generate.gif)
 
-`fill`: one object, `full_name` is computed, not asked
+`fill`: one object matching it
 
 ![schemify fill](https://raw.githubusercontent.com/aaltatan/schemify-cli/main/docs/demo/fill.gif)
 
@@ -46,32 +46,6 @@ schemify list person.schema.json -f python          # ask for a list of them
 
 Types: `string`, `integer`, `number`, `boolean`, `date`, `datetime`, `enum`, `array`, `object`,
 each with its constraints (length, pattern, format, range, items, ...) and an optional default.
-
-## Computed properties
-
-A property with `x-compute` is not asked in `fill`, it is computed from the other values:
-
-```json
-"full_name": {"type": "string", "x-compute": {"fn": "join", "from": ["first", "middle?", "last"]}}
-```
-
-- `fn`: the computer, `from`: source paths (a list, or an `{alias: path}` object for `template`
-  and `expr`), `options`: extra arguments, `default`: the value when a source is missing.
-- Paths are relative to the owning object (`address.city`, `items[0]`), or to the root
-  (`$.company`). `items[*].price` gives every price; a trailing `?` makes a source optional.
-
-Built-in computers:
-
-- **Text**: join, concat, template, upper, lower, title, capitalize, trim, replace, slice,
-  initials, slug, length, pad, mask
-- **Numbers**: sum, subtract, multiply, divide, average, min, max, abs, round, percent,
-  percent_of, expr
-- **Dates**: today, now, add_days, add_months, add_years, days_between, age, year, month, day,
-  weekday, format_date, start_of_month, end_of_month (a date left out or missing with `?` is
-  today, computed each run)
-- **Number to words**: words (options: `lang`, `prefix`, `suffix`)
-- **Logic, lookup and misc**: coalesce, if_else, equals, lookup, constant, count, count_if,
-  unique, uuid
 
 ## Reusing it in a typer app
 
@@ -97,5 +71,5 @@ the others use its schema:
 vhs docs/demo/generate.tape && vhs docs/demo/fill.tape && vhs docs/demo/list.tape
 ```
 
-After changing `generators.py`, `validators.py` or `computers.py`, run `pnpm sync && pnpm check`
+After changing `generators.py` or `validators.py`, run `pnpm sync && pnpm check`
 in [the schemify editor](https://github.com/aaltatan/schemify) so it stays in step.

@@ -23,6 +23,29 @@ type GenerateFn = Callable[[], Schema]
 
 SCHEMA_DIALECT = "https://json-schema.org/draft/2020-12/schema"
 
+_DATE = r"[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])"
+
+# `format` is only an annotation in 2020-12, most validators skip it unless told to check
+# formats, but every one checks `pattern`: ASCII classes, no lookaround, so it reads the same
+# in JS, Python, Go (RE2), Rust, Java and .NET.
+# shortcut: dates are not checked against the calendar (02-31 passes), format checking does that
+FORMAT_PATTERNS = {
+    "date": rf"^{_DATE}$",
+    "date-time": (
+        rf"^{_DATE}[Tt]([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\.[0-9]+)?"
+        r"([Zz]|[+-]([01][0-9]|2[0-3]):[0-5][0-9])$"
+    ),
+    "email": r"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+    "uuid": r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+}
+
+DIGITS_ONLY = r"^[0-9]+$"
+
+
+def _formatted(string_format: str) -> Schema:
+    return {"type": "string", "format": string_format, "pattern": FORMAT_PATTERNS[string_format]}
+
+
 generators = Registry[GenerateFn]("Type")
 """The default registry, every registered type is offered in the type prompts."""
 
@@ -79,12 +102,12 @@ def generate_string() -> Schema:
     string_format = questionary.select("Format:", choices=["none", "email", "uuid"]).unsafe_ask()
 
     if string_format != "none":
-        return {**schema, "format": string_format}
+        return _formatted(string_format)
 
     constraints = STRING_CONSTRAINTS
 
     if questionary.confirm("Digits only?", default=False).unsafe_ask():
-        schema["pattern"] = r"^\d+$"
+        schema["pattern"] = DIGITS_ONLY
         constraints = [c for c in STRING_CONSTRAINTS if c[0] != "pattern"]
 
     return {**schema, **_ask_constraints(constraints)}
@@ -116,13 +139,13 @@ def generate_boolean() -> Schema:
 @generators.register("date")
 def generate_date() -> Schema:
     """Return an ISO date string: `2026-11-04`."""
-    return {"type": "string", "format": "date"}
+    return _formatted("date")
 
 
 @generators.register("datetime")
 def generate_datetime() -> Schema:
     """Return an RFC 3339 datetime string: `2026-11-04T10:30:00+03:00`."""
-    return {"type": "string", "format": "date-time"}
+    return _formatted("date-time")
 
 
 @generators.register("enum")

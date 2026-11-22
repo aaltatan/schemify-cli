@@ -1,7 +1,10 @@
 from collections.abc import Callable
+from datetime import UTC, date, datetime, timedelta, timezone
 
 import pytest
+from jsonschema import Draft202012Validator
 from schemify.generators import (
+    FORMAT_PATTERNS,
     SCHEMA_DIALECT,
     ask_schema,
     generators,
@@ -41,6 +44,41 @@ class TestRegistry:
         assert 1 not in registry
 
 
+class TestFormatPatterns:
+    """Without a format checker, like most validators by default, the pattern still checks."""
+
+    @pytest.mark.parametrize(
+        ("string_format", "valid", "invalid"),
+        [
+            ("date", [date(2026, 11, 4).isoformat()], ["2026-13-01", "2026-1-01", "hello"]),
+            (
+                "date-time",
+                [
+                    datetime(
+                        2026, 11, 4, 10, 30, 0, 123456, timezone(timedelta(hours=3))
+                    ).isoformat(),
+                    datetime(2026, 11, 4, 10, 30, tzinfo=UTC).isoformat(),
+                    "2026-11-04T10:30:00Z",
+                ],
+                ["2026-11-04 10:30:00Z", "2026-11-04T10:30:00", "2026-11-04T25:00:00Z", "hello"],
+            ),
+            ("email", ["a@b.co"], ["nope", "a@b", "a b@c.d"]),
+            (
+                "uuid",
+                ["123e4567-e89b-12d3-a456-426614174000"],
+                ["123e4567e89b12d3a456426614174000", "hello"],
+            ),
+        ],
+    )
+    def test_pattern(self, string_format: str, valid: list[str], invalid: list[str]) -> None:
+        validator = Draft202012Validator(
+            {"type": "string", "pattern": FORMAT_PATTERNS[string_format]}
+        )
+
+        assert all(validator.is_valid(value) for value in valid)
+        assert not any(validator.is_valid(value) for value in invalid)
+
+
 class TestPrimitives:
     def test_without_validators(self, prompts: Prompts) -> None:
         prompts.feed([False, False, False])
@@ -52,14 +90,26 @@ class TestPrimitives:
 
     def test_no_questions(self, prompts: Prompts) -> None:
         assert generators["boolean"]() == {"type": "boolean"}
-        assert generators["date"]() == {"type": "string", "format": "date"}
-        assert generators["datetime"]() == {"type": "string", "format": "date-time"}
+        assert generators["date"]() == {
+            "type": "string",
+            "format": "date",
+            "pattern": FORMAT_PATTERNS["date"],
+        }
+        assert generators["datetime"]() == {
+            "type": "string",
+            "format": "date-time",
+            "pattern": FORMAT_PATTERNS["date-time"],
+        }
         assert not prompts.messages
 
     def test_string_format(self, prompts: Prompts) -> None:
         prompts.feed([True, "email"])
 
-        assert generators["string"]() == {"type": "string", "format": "email"}
+        assert generators["string"]() == {
+            "type": "string",
+            "format": "email",
+            "pattern": FORMAT_PATTERNS["email"],
+        }
 
     def test_string_validators(self, prompts: Prompts) -> None:
         # validators, no format, not digits, min ("x" rejected), max, pattern, blocked
@@ -77,7 +127,7 @@ class TestPrimitives:
     def test_string_digits_only_skips_pattern(self, prompts: Prompts) -> None:
         prompts.feed([True, "none", True, "", "5", ""])
 
-        assert generators["string"]() == {"type": "string", "pattern": r"^\d+$", "maxLength": 5}
+        assert generators["string"]() == {"type": "string", "pattern": "^[0-9]+$", "maxLength": 5}
 
     def test_conflicting_bound_is_asked_again(self, prompts: Prompts) -> None:
         # gt skipped, ge 10, lt "1" rejected then "20", le skipped, multiple of 0.5

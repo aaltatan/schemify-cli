@@ -1,6 +1,7 @@
 """Schema generators: ask the user about a type and return its JSON Schema, picked by type name."""
 
 from collections.abc import Callable
+from typing import Any
 
 import questionary
 
@@ -11,10 +12,13 @@ from .validators import (
     NUMBER_CONSTRAINTS,
     STRING_CONSTRAINTS,
     Constraint,
+    Parser,
     default_parser,
     is_choice,
     is_property_name,
     optional,
+    to_int,
+    to_number,
     validator,
     within_bounds,
 )
@@ -86,6 +90,24 @@ def _ask_constraints(constraints: list[Constraint]) -> Schema:
     return schema
 
 
+def _wants_choices() -> bool:
+    return questionary.confirm("Limit to choices?", default=False).unsafe_ask()
+
+
+def _ask_choices(parse: Parser) -> list[Any]:
+    """Ask for choices, one per prompt, each parsed with `parse`."""
+    choices: list[Any] = []
+
+    while answer := (
+        questionary.text("Choice (empty to finish):", validate=is_choice(choices, parse))
+        .unsafe_ask()
+        .strip()
+    ):
+        choices.append(parse(answer))
+
+    return choices
+
+
 # -----------------------
 # primitive types
 # -----------------------
@@ -93,16 +115,21 @@ def _ask_constraints(constraints: list[Constraint]) -> Schema:
 
 @generators.register("string")
 def generate_string() -> Schema:
-    """Ask for a string: format (email, uuid), digits only, length, pattern, blocked values."""
+    """Ask for a string: format (date, email, ...), choices, digits only, length, pattern."""
+    string_format = questionary.select(
+        "Format:", choices=["none", "date", "date-time", "email", "uuid"]
+    ).unsafe_ask()
+
+    if string_format != "none":
+        return _formatted(string_format)
+
     schema: Schema = {"type": "string"}
 
     if not _wants_validators():
         return schema
 
-    string_format = questionary.select("Format:", choices=["none", "email", "uuid"]).unsafe_ask()
-
-    if string_format != "none":
-        return _formatted(string_format)
+    if _wants_choices():
+        return {**schema, "enum": _ask_choices(str.strip)}
 
     constraints = STRING_CONSTRAINTS
 
@@ -113,54 +140,30 @@ def generate_string() -> Schema:
     return {**schema, **_ask_constraints(constraints)}
 
 
-def _number_generator(number_type: str) -> GenerateFn:
+def _number_generator(number_type: str, parse: Parser) -> GenerateFn:
     def generate() -> Schema:
-        """Ask for an integer or a number: bounds and a multiple."""
+        """Ask for an integer or a number: choices, or bounds and a multiple."""
         schema: Schema = {"type": number_type}
 
         if not _wants_validators():
             return schema
+
+        if _wants_choices():
+            return {**schema, "enum": _ask_choices(parse)}
 
         return {**schema, **_ask_constraints(NUMBER_CONSTRAINTS)}
 
     return generate
 
 
-generators.add(_number_generator("integer"), "integer")
-generators.add(_number_generator("number"), "number")
+generators.add(_number_generator("integer", to_int), "integer")
+generators.add(_number_generator("number", to_number), "number")
 
 
 @generators.register("boolean")
 def generate_boolean() -> Schema:
     """Return a boolean."""
     return {"type": "boolean"}
-
-
-@generators.register("date")
-def generate_date() -> Schema:
-    """Return an ISO date string: `2026-11-04`."""
-    return _formatted("date")
-
-
-@generators.register("datetime")
-def generate_datetime() -> Schema:
-    """Return an RFC 3339 datetime string: `2026-11-04T10:30:00+03:00`."""
-    return _formatted("date-time")
-
-
-@generators.register("enum")
-def generate_enum() -> Schema:
-    """Ask for a string limited to choices, one per prompt."""
-    choices: list[str] = []
-
-    while choice := (
-        questionary.text("Choice (empty to finish):", validate=is_choice(choices))
-        .unsafe_ask()
-        .strip()
-    ):
-        choices.append(choice)
-
-    return {"type": "string", "enum": choices}
 
 
 # -----------------------

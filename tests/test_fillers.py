@@ -155,9 +155,10 @@ class TestAskData:
 
     def test_round_trip(self, prompts: Prompts) -> None:
         prompts.feed([
-            "name", "string", True, "none", False, "2", "", "", "", "Full name", "", "", True,
-            "born", "date", "", "", "", True,
-            "role", "enum", "admin", "user", "", "", "", "", False,
+            "name", "string", "none", True, False, False, "2", "", "", "",
+            "Full name", "", "", True,
+            "born", "string", "date", "", "", "", True,
+            "role", "string", "none", True, True, "admin", "user", "", "", "", "", False,
             "", False,
         ])  # fmt: skip
         schema = ask_schema("Person")

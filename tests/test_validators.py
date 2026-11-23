@@ -91,6 +91,9 @@ class TestPromptValidators:
         assert is_choice(["red"])("") is True
         assert is_choice(["red"])(" red ") == "Choice 'red' already exists"
         assert is_choice(["red"])("green") is True
+        assert is_choice([1], to_int)("x") == "'x' is not an integer"
+        assert is_choice([1], to_int)(" 1 ") == "Choice '1' already exists"
+        assert is_choice([1], to_int)("2") is True
 
     def test_is_property_name(self) -> None:
         assert is_property_name({})("") == "Add at least one property"

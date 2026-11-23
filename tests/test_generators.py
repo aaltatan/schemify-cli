@@ -19,9 +19,6 @@ class TestRegistry:
         assert generators.names == [
             "array",
             "boolean",
-            "date",
-            "datetime",
-            "enum",
             "integer",
             "number",
             "object",
@@ -81,7 +78,7 @@ class TestFormatPatterns:
 
 class TestPrimitives:
     def test_without_validators(self, prompts: Prompts) -> None:
-        prompts.feed([False, False, False])
+        prompts.feed(["none", False, False, False])
 
         assert generators["string"]() == {"type": "string"}
         assert generators["integer"]() == {"type": "integer"}
@@ -90,30 +87,22 @@ class TestPrimitives:
 
     def test_no_questions(self, prompts: Prompts) -> None:
         assert generators["boolean"]() == {"type": "boolean"}
-        assert generators["date"]() == {
-            "type": "string",
-            "format": "date",
-            "pattern": FORMAT_PATTERNS["date"],
-        }
-        assert generators["datetime"]() == {
-            "type": "string",
-            "format": "date-time",
-            "pattern": FORMAT_PATTERNS["date-time"],
-        }
         assert not prompts.messages
 
-    def test_string_format(self, prompts: Prompts) -> None:
-        prompts.feed([True, "email"])
+    @pytest.mark.parametrize("string_format", ["date", "date-time", "email", "uuid"])
+    def test_string_format(self, prompts: Prompts, string_format: str) -> None:
+        prompts.feed([string_format])
 
         assert generators["string"]() == {
             "type": "string",
-            "format": "email",
-            "pattern": FORMAT_PATTERNS["email"],
+            "format": string_format,
+            "pattern": FORMAT_PATTERNS[string_format],
         }
+        assert not prompts.answers
 
     def test_string_validators(self, prompts: Prompts) -> None:
-        # validators, no format, not digits, min ("x" rejected), max, pattern, blocked
-        prompts.feed([True, "none", False, "x", "2", "10", "^[a-z]+$", "root, admin"])
+        # no format, validators, no choices, not digits, min ("x" rejected), max, pattern, blocked
+        prompts.feed(["none", True, False, False, "x", "2", "10", "^[a-z]+$", "root, admin"])
 
         assert generators["string"]() == {
             "type": "string",
@@ -125,13 +114,13 @@ class TestPrimitives:
         assert prompts.rejected == [("x", "'x' is not an integer")]
 
     def test_string_digits_only_skips_pattern(self, prompts: Prompts) -> None:
-        prompts.feed([True, "none", True, "", "5", ""])
+        prompts.feed(["none", True, False, True, "", "5", ""])
 
         assert generators["string"]() == {"type": "string", "pattern": "^[0-9]+$", "maxLength": 5}
 
     def test_conflicting_bound_is_asked_again(self, prompts: Prompts) -> None:
-        # gt skipped, ge 10, lt "1" rejected then "20", le skipped, multiple of 0.5
-        prompts.feed([True, "", "10", "1", "20", "", "0.5"])
+        # no choices, gt skipped, ge 10, lt "1" rejected then "20", le skipped, multiple of 0.5
+        prompts.feed([True, False, "", "10", "1", "20", "", "0.5"])
 
         assert generators["number"]() == {
             "type": "number",
@@ -141,20 +130,29 @@ class TestPrimitives:
         }
         assert prompts.rejected == [("1", "minimum (10) must be less than exclusiveMaximum (1)")]
 
-    def test_enum(self, prompts: Prompts) -> None:
-        prompts.feed(["", "red", " red ", "green, blue", ""])
+    def test_string_choices(self, prompts: Prompts) -> None:
+        prompts.feed(["none", True, True, "", "red", " red ", "green, blue", ""])
 
-        assert generators["enum"]() == {"type": "string", "enum": ["red", "green, blue"]}
+        assert generators["string"]() == {"type": "string", "enum": ["red", "green, blue"]}
         assert prompts.rejected == [
             ("", "Add at least one choice"),
             (" red ", "Choice 'red' already exists"),
         ]
 
+    def test_number_choices(self, prompts: Prompts) -> None:
+        prompts.feed([True, True, "x", "1", "2", " 2 ", ""])
+
+        assert generators["integer"]() == {"type": "integer", "enum": [1, 2]}
+        assert prompts.rejected == [
+            ("x", "'x' is not an integer"),
+            (" 2 ", "Choice '2' already exists"),
+        ]
+
 
 class TestContainers:
     def test_array(self, prompts: Prompts) -> None:
-        # items type, items validators, then array validators: min, max, unique
-        prompts.feed(["string", False, True, "1", "", True])
+        # items type, items format and validators, then array validators: min, max, unique
+        prompts.feed(["string", "none", False, True, "1", "", True])
 
         assert generators["array"]() == {
             "type": "array",
@@ -166,9 +164,9 @@ class TestContainers:
     def test_object_with_nested_array_of_objects(self, prompts: Prompts) -> None:
         prompts.feed([
             "",  # rejected, no property yet
-            "name", "string", False, "", "Full name", "", True,
+            "name", "string", "none", False, "", "Full name", "", True,
             "tags", "array", "object",
-            "label", "enum", "a", "b", "", "", "", "", True,
+            "label", "string", "none", True, True, "a", "b", "", "", "", "", True,
             "", True,  # end of the tag object, allow extra properties
             False,  # no array validators
             "Tags", "", "", False,  # tags: label, no description, no default, optional
@@ -199,8 +197,8 @@ class TestContainers:
         # read as JSON, else as text, the first matching the property schema is kept
         prompts.feed([
             "age", "integer", False, "", "", "x", "30", True,
-            "code", "string", False, "", "", "42", False,
-            "tags", "array", "string", False, False, "", "", '["a"]', False,
+            "code", "string", "none", False, "", "", "42", False,
+            "tags", "array", "string", "none", False, False, "", "", '["a"]', False,
             "",
             False,
         ])  # fmt: skip

@@ -170,16 +170,19 @@ def optional(validate: PromptValidator) -> PromptValidator:
     return lambda text: not text.strip() or validate(text)
 
 
-def is_choice(existing: Collection[str]) -> PromptValidator:
-    """Accept a new enum choice, or an empty answer to finish once one choice exists."""
+def is_choice(existing: Collection[Any], parse: Parser = str.strip) -> PromptValidator:
+    """Accept a new enum choice `parse` accepts, or an empty answer once one choice exists."""
 
     def validate(text: str) -> bool | str:
-        choice = text.strip()
-
-        if not choice:
+        if not text.strip():
             return bool(existing) or "Add at least one choice"
 
-        return choice not in existing or f"Choice '{choice}' already exists"
+        try:
+            choice = parse(text)
+        except ValueError as e:
+            return str(e)
+
+        return choice not in existing or f"Choice '{text.strip()}' already exists"
 
     return validate
 

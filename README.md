@@ -44,8 +44,9 @@ schemify list person.schema.json -f python          # ask for a list of them
 - `-o, --output` saves to a file (asks before overwriting); without it the result is printed.
 - `-f, --format` picks the output of `fill` and `list`: `json`, `python` or `javascript`.
 
-Types: `string`, `integer`, `number`, `boolean`, `date`, `datetime`, `enum`, `array`, `object`,
-each with its constraints (length, pattern, format, range, items, ...) and an optional default.
+Types: `string`, `integer`, `number`, `boolean`, `array`, `object`, each with its constraints
+(length, pattern, range, items, ...) and an optional default. A string can have a format
+(`date`, `date-time`, `email`, `uuid`), and a string or number can be limited to choices.
 
 ## Reusing it in a typer app
 

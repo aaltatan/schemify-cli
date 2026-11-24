@@ -138,8 +138,8 @@ def _text_filler(parse: Parser) -> FillFn:
 
     def fill_text(schema: Schema, label: str, required: bool) -> Any:  # noqa: FBT001
         def validate(text: str) -> bool | str:
-            if not required and not text.strip():
-                return True
+            if not text.strip():
+                return "This value is required" if required else True
 
             try:
                 value = parse(text)

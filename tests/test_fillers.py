@@ -59,10 +59,11 @@ class TestLeaves:
 
         assert fill({"type": "integer"}, "age", required=False) is MISSING
 
-    def test_required_string_can_be_empty_when_schema_allows(self, prompts: Prompts) -> None:
-        prompts.feed([""])
+    def test_required_text_rejects_blank(self, prompts: Prompts) -> None:
+        prompts.feed(["", "   ", "Rama"])
 
-        assert fill({"type": "string"}, "note") == ""
+        assert fill({"type": "string"}, "note") == "Rama"
+        assert [error for _, error in prompts.rejected] == ["This value is required"] * 2
 
     def test_boolean_and_enum(self, prompts: Prompts) -> None:
         prompts.feed([True, "2"])

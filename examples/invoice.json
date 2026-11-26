@@ -1,0 +1,22 @@
+{
+  "number": "INV-0042",
+  "issued": "2026-11-26",
+  "status": "sent",
+  "customer": {
+    "name": "Example Co.",
+    "email": "billing@example.com"
+  },
+  "lines": [
+    {
+      "product": "Desk lamp",
+      "qty": 3,
+      "price": 24.5
+    },
+    {
+      "product": "LED bulb",
+      "qty": 10,
+      "price": 3.75
+    }
+  ],
+  "paid": false
+}

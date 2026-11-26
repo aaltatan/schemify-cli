@@ -1,0 +1,93 @@
+site_name: schemify
+site_description: Build JSON Schemas interactively, and fill JSON data from them, from the command line.
+site_url: https://aaltatan.github.io/schemify-cli/
+repo_url: https://github.com/aaltatan/schemify-cli
+repo_name: aaltatan/schemify-cli
+edit_uri: edit/main/docs/
+
+# docs/demo holds the vhs sources of the GIFs; only the GIFs are published
+exclude_docs: |
+  demo/*.tape
+  demo/*.ps1
+  ruff.toml
+
+theme:
+  name: material
+  icon:
+    logo: material/code-json
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+    - content.action.edit
+    - toc.follow
+
+nav:
+  - Home: index.md
+  - Installation: install.md
+  - User guide:
+      - guide/index.md
+      - Your first schema: guide/first-schema.md
+      - Types and constraints: guide/types.md
+      - Filling data: guide/fill.md
+      - Lists: guide/list.md
+      - Output: guide/output.md
+      - Writing schemas by hand: guide/hand-written.md
+      - With other tools: guide/other-tools.md
+  - Recipes: recipes.md
+  - Python API: python.md
+  - Reference:
+      - reference/index.md
+      - Commands and options: reference/commands.md
+      - Questions and keywords: reference/questions.md
+      - Errors and exit codes: reference/errors.md
+  - Development: development.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.keys
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/aaltatan/schemify-cli
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/schemify-cli/

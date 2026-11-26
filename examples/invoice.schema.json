@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Invoice",
+  "type": "object",
+  "properties": {
+    "number": {
+      "title": "Invoice number",
+      "description": "INV- and 4 digits",
+      "type": "string",
+      "pattern": "^INV-[0-9]{4}$"
+    },
+    "issued": {
+      "title": "Issue date",
+      "type": "string",
+      "format": "date",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+    },
+    "status": {
+      "title": "Status",
+      "type": "string",
+      "enum": [
+        "draft",
+        "sent",
+        "paid"
+      ],
+      "default": "draft"
+    },
+    "customer": {
+      "title": "Customer",
+      "type": "object",
+      "properties": {
+        "name": {
+          "title": "Customer name",
+          "type": "string"
+        },
+        "email": {
+          "title": "Email",
+          "type": "string",
+          "format": "email",
+          "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "lines": {
+      "title": "Lines",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product": {
+            "title": "Product",
+            "type": "string"
+          },
+          "qty": {
+            "title": "Quantity",
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "price": {
+            "title": "Unit price",
+            "description": "USD",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "multipleOf": 0.01
+          }
+        },
+        "required": [
+          "product",
+          "qty",
+          "price"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "paid": {
+      "title": "Paid",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "number",
+    "issued",
+    "status",
+    "customer",
+    "lines"
+  ],
+  "additionalProperties": false
+}

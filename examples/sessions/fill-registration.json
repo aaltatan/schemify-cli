@@ -1,0 +1,29 @@
+{
+  "args": [
+    "fill",
+    "registration.schema.json",
+    "-o",
+    "registration.json"
+  ],
+  "output": "registration.json",
+  "answers": [
+    "1234",
+    "0b7e2c1a-4b7e-4d2f-9a0e-2f4c9d1e8b11",
+    "R",
+    "Rama Hasan",
+    "rama@example.com",
+    "vip",
+    "2",
+    "2026-12-01T09:30:00+03:00",
+    true,
+    true,
+    "lighting",
+    true,
+    "lighting",
+    true,
+    "design",
+    false,
+    true,
+    true
+  ]
+}

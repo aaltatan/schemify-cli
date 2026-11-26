@@ -1,0 +1,5 @@
+{
+  "args": ["list", "person.schema.json", "-f", "python", "-o", "people.py"],
+  "output": "people.py",
+  "answers": ["Rama", "Hasan", "25", true, "Omar", "Ali", "", false]
+}

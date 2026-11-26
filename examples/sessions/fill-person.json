@@ -1,0 +1,5 @@
+{
+  "args": ["fill", "person.schema.json", "-o", "rama.json"],
+  "output": "rama.json",
+  "answers": ["Rama", "Hasan", "-3", "25"]
+}

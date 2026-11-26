@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Printer settings",
+  "type": "object",
+  "properties": {
+    "host": { "title": "Printer address", "description": "IP or host name", "type": "string", "default": "192.168.1.50" },
+    "port": { "title": "Port", "type": "integer", "minimum": 1, "maximum": 65535, "default": 9100 },
+    "dpi": { "title": "Resolution", "enum": [203, 300, 600], "default": 203 },
+    "darkness": { "title": "Darkness", "description": "0 to 30", "type": "integer", "minimum": 0, "maximum": 30, "default": 15 },
+    "cut": { "title": "Cut after each label", "type": "boolean", "default": false }
+  },
+  "required": ["host", "port", "dpi"],
+  "additionalProperties": false
+}

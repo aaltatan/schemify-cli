@@ -16,6 +16,12 @@ dependencies = [
     "typer-swissknife>=0.1.1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/aaltatan/schemify-cli"
+Documentation = "https://aaltatan.github.io/schemify-cli/"
+Repository = "https://github.com/aaltatan/schemify-cli"
+Issues = "https://github.com/aaltatan/schemify-cli/issues"
+
 [project.scripts]
 schemify = "schemify.cli.main:main"
 
@@ -29,6 +35,9 @@ dev = [
     "pytest>=9.2.0",
     "ruff>=0.17.4",
     "types-jsonschema>=4.26.0.20261006",
+]
+docs = [
+    "mkdocs-material>=9.8.2",
 ]
 
 [tool.pytest.ini_options]

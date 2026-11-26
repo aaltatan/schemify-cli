@@ -4,6 +4,9 @@ Build JSON Schemas interactively, and fill JSON data from them, from the command
 
 Source: [github.com/aaltatan/schemify-cli](https://github.com/aaltatan/schemify-cli)
 
+**Documentation: [aaltatan.github.io/schemify-cli](https://aaltatan.github.io/schemify-cli/)**:
+a step-by-step guide, real-world recipes, the Python API and the full reference.
+
 A web version runs at [schemify.surge.sh](https://schemify.surge.sh)
 ([source](https://github.com/aaltatan/schemify)): the same questions as fields, with the
 schema updating as you type.

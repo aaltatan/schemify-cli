@@ -1,0 +1,5 @@
+{
+  "args": ["fill", "person.schema.json", "-f", "javascript", "-o", "rama.js"],
+  "output": "rama.js",
+  "answers": ["Rama", "Hasan", "25"]
+}

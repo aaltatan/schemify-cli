@@ -1,0 +1,5 @@
+{
+  "args": ["list", "person.schema.json", "-f", "javascript", "-o", "people.fixture.js"],
+  "output": "people.fixture.js",
+  "answers": ["Rama", "Hasan", "25", true, "Omar", "Ali", "", false]
+}

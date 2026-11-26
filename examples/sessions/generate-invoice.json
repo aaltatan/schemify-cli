@@ -1,0 +1,22 @@
+{
+  "args": ["generate", "-t", "Invoice", "-o", "invoice.schema.json"],
+  "output": "invoice.schema.json",
+  "answers": [
+    "number", "string", "none", true, false, false, "", "", "^INV-[0-9]{4}$", "", "Invoice number", "INV- and 4 digits", "", true,
+    "issued", "string", "date", "Issue date", "", "", true,
+    "status", "string", "none", true, true, "draft", "sent", "paid", "", "Status", "", "draft", true,
+    "customer", "object",
+      "name", "string", "none", false, "Customer name", "", "", true,
+      "email", "string", "email", "Email", "", "", false,
+      "", false,
+    "Customer", "", "", true,
+    "lines", "array", "object",
+      "product", "string", "none", false, "Product", "", "", true,
+      "qty", "integer", true, false, "", "1", "", "", "", "Quantity", "", "1", true,
+      "price", "number", true, false, "0", "", "", "", "0.01", "Unit price", "USD", "", true,
+      "", false,
+    true, "1", "", false, "Lines", "", "", true,
+    "paid", "boolean", "Paid", "", "false", false,
+    "", false
+  ]
+}

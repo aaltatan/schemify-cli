@@ -1,0 +1,10 @@
+{
+  "args": ["generate", "-t", "Person", "-o", "person.schema.json"],
+  "output": "person.schema.json",
+  "answers": [
+    "first", "string", "none", false, "First name", "", "", true,
+    "last", "string", "none", false, "Last name", "", "", true,
+    "age", "integer", true, false, "", "0", "", "150", "", "Age", "In whole years", "", false,
+    "", false
+  ]
+}

@@ -1,0 +1,2 @@
+# show real program output (pprint quotes, aligned comments): not linted
+exclude = ["*"]

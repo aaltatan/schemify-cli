@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Registration",
+  "type": "object",
+  "properties": {
+    "id": { "title": "Registration id", "type": "string", "format": "uuid" },
+    "attendee": { "title": "Full name", "type": "string", "minLength": 2 },
+    "email": { "title": "Email", "type": "string", "format": "email" },
+    "ticket": { "title": "Ticket", "enum": ["standard", "vip", "student"], "default": "standard" },
+    "seats": { "title": "Seats", "type": "integer", "enum": [1, 2, 3, 4], "default": 1 },
+    "arrival": { "title": "Arrival", "description": "ISO date and time", "type": "string", "format": "date-time" },
+    "topics": {
+      "title": "Topics",
+      "type": "array",
+      "items": { "title": "Topic", "type": "string" },
+      "maxItems": 3,
+      "uniqueItems": true
+    },
+    "newsletter": { "title": "Subscribe to the newsletter", "type": "boolean", "default": true }
+  },
+  "required": ["id", "attendee", "email", "ticket", "seats"],
+  "additionalProperties": false
+}

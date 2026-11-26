@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Person",
+  "type": "object",
+  "properties": {
+    "first": {
+      "title": "First name",
+      "type": "string"
+    },
+    "last": {
+      "title": "Last name",
+      "type": "string"
+    },
+    "age": {
+      "title": "Age",
+      "description": "In whole years",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 150
+    }
+  },
+  "required": [
+    "first",
+    "last"
+  ],
+  "additionalProperties": false
+}

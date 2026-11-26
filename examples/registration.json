@@ -1,0 +1,13 @@
+{
+  "id": "0b7e2c1a-4b7e-4d2f-9a0e-2f4c9d1e8b11",
+  "attendee": "Rama Hasan",
+  "email": "rama@example.com",
+  "ticket": "vip",
+  "seats": 2,
+  "arrival": "2026-12-01T09:30:00+03:00",
+  "topics": [
+    "lighting",
+    "design"
+  ],
+  "newsletter": true
+}
